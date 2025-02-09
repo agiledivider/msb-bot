@@ -15,9 +15,6 @@ const client = new Client({
   ]
 });
 
-
-const MSB_ID = '600336147142410254';
-
 var commandKit = new CommandKit({
   client,
   devGuildIds: ['1209460505706766376'],
@@ -27,7 +24,6 @@ var commandKit = new CommandKit({
   bulkRegister: true,
 })
 
-// commandKit.reloadCommands()
 
 let callAmount = 0;
 process.on('SIGINT', function() {
@@ -38,14 +34,5 @@ process.on('SIGINT', function() {
   callAmount++;
 });
 
-
-client.on(Events.PresenceUpdate, (oldPresence, presence) => {
-  if (oldPresence?.status === presence?.status) return
-  console.log(`${presence.user.globalName} ist nun ${presence?.status} (${oldPresence?.status}) at ${(new Date()).toLocaleString('de-DE')}`);
-})
-
-client.on(Events.UserUpdate, user => {
-  console.log(user, "User Update", user.username);
-})
 
 client.login(process.env.DISCORD_BOT_TOKEN);
