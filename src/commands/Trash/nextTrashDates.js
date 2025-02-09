@@ -37,7 +37,7 @@ module.exports = {
 
     message = "die nächsten Termine sind: \n"
     x.forEach(trashDate => {
-      message += `${(new Date(trashDate.date)).toLocaleString('de-DE', { timeZone: 'Europe/Berlin' , day: 'numeric', month: 'numeric'})} - ${trashDate.type}\n`
+      message += `${(new Date(trashDate.date)).toLocaleString('de-DE', { timeZone: 'Europe/Berlin' , day: '2-digit', month: '2-digit'})} - ${trashDate.type}\n`
     })
 
     interaction.reply({
