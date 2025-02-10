@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: makerspacebonn-discord-bot
-          image: ghcr.io/lxfrdl/msb-bot:358c2e7a1042ff47ab1391e8b8dbdb103376fe05
+          image: ghcr.io/lxfrdl/msb-bot:1d9d9f5083e1600f82a61038652078ef99884caf
           env:
             - name: DISCORD_BOT_TOKEN
               valueFrom:
