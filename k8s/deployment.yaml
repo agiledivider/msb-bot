@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: makerspacebonn-discord-bot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: makerspacebonn-discord-bot
+  template:
+    metadata:
+      labels:
+        app: makerspacebonn-discord-bot
+    spec:
+      containers:
+        - name: makerspacebonn-discord-bot
+          image: ghcr.io/agiledivider/msb-bot:latest
+          env:
+            - name: DISCORD_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: discord-token
+                  key: DISCORD_TOKEN
