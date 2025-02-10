@@ -34,7 +34,7 @@ WORKDIR /home/node/code
 
 COPY --chown=node:node package-lock.json package.json ./
 
-RUN npm i
+RUN npm ci
 
 COPY --chown=node:node ./src ./src
 
