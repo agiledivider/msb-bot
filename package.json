@@ -9,12 +9,16 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "commandkit": "^0.1.10",
+    "bufferutil": "^4.0.9",
+    "commandkit": "^0.1.6",
     "date-diff": "^1.0.2",
-    "discord.js": "^14.16.3",
+    "discord.js": "^14.17.3",
     "dotenv": "^16.4.7",
+    "mongoose": "^8.10.1",
+    "mqtt": "^5.10.3",
     "node-ical": "^0.20.1",
-    "node-schedule": "^2.1.1"
+    "node-schedule": "^2.1.1",
+    "nodemailer": "^6.10.0"
   },
   "devDependencies": {
     "eslint": "^9.17.0"
