@@ -12,7 +12,7 @@ const client = mqtt.connect("mqtt://status.makerspacebonn.de", {
 
 function checkChangeAbuse () {
   if (statechanges.length > 4) {
-    statechanges = statechanges.filter(state => state.lastchange > (Date.now()/1000 - 10))
+    statechanges = statechanges.filter(state => state.lastchange > (Date.now()/1000 - 3600))
     console.log("statechanges",statechanges)
     if (statechanges.length > 4) {
       channel.send({
@@ -68,7 +68,7 @@ client.on("reconnect", () => {
 module.exports = async (client) => {
 
   var msb = {
-    channelId: '600337356712575007',
+    channelId: '1243903891951714394', // öffnungszeiten kanal
     guildId: '600336147142410254'
   }
   var test = {
