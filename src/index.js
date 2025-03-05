@@ -16,7 +16,7 @@ const client = new Client({
   ]
 });
 
-var commandKit = new CommandKit({
+new CommandKit({
   client,
   devGuildIds: ['1209460505706766376'],
   devUserIds: ['529022599469203476'],

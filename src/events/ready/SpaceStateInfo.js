@@ -44,7 +44,7 @@ client.on('message', (topic, message) => {
 client.on('connect', () => {
   console.log('connected to mqtt')
   client.subscribe('msb/state', (err) => {
-    console.log('subscribed')
+    console.log('subscribed', err)
   })
 })
 
