@@ -3,6 +3,8 @@ require('dotenv').config()
 const { Client, Events, GatewayIntentBits, MessageFlagsStrings, MessageFlagsBitField } = require('discord.js');
 const { CommandKit } = require('commandkit');
 const { join } = require('path')
+const { TrashService, icsTrashRepository, RealDateService } = require('./Services/TrashService')
+const { TrashDiscordService } = require('./Services/trashDiscordService')
 
 // Create a new client instance
 const client = new Client({
@@ -24,6 +26,12 @@ var commandKit = new CommandKit({
   bulkRegister: true,
 })
 
+// services
+realDateService = new RealDateService()
+client.services = {
+  trashService:  new TrashService(new icsTrashRepository(__dirname + '/muell.ics', realDateService), realDateService),
+}
+
 
 let callAmount = 0;
 process.on('SIGINT', function() {
@@ -36,3 +44,8 @@ process.on('SIGINT', function() {
 
 
 client.login(process.env.DISCORD_BOT_TOKEN);
+
+process.on('SIGINT', function() {
+  console.log('Do something useful here.');
+  client.destroy();
+});

@@ -21,6 +21,7 @@
     "nodemailer": "^6.10.0"
   },
   "devDependencies": {
+    "@types/node-schedule": "^2.1.7",
     "eslint": "^9.17.0"
   }
 }
