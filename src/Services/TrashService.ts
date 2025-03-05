@@ -1,3 +1,12 @@
+export interface DateService {
+    now(): Date
+}
+
+interface TrashRepository {
+    getAllTrashDates(): Promise<TrashDate[]>
+    getNextTrashDates(): Promise<TrashDate[]>
+}
+
 export class TrashDate {
     type: string
     startDate: Date
@@ -22,15 +31,6 @@ export class TrashDate {
         })
     }
 
-}
-
-interface TrashRepository {
-    getAllTrashDates(): Promise<TrashDate[]>
-    getNextTrashDates(): Promise<TrashDate[]>
-}
-
-export interface DateService {
-    now(): Date
 }
 
 export class RealDateService implements DateService {
