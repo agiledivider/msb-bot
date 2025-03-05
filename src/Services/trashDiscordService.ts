@@ -1,5 +1,5 @@
 import { scheduleJob } from "node-schedule";
-import {ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, Message} from "discord.js";
+import {ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, Interaction, Message} from "discord.js";
 import { TrashDate } from "./TrashService";
 
 export class TrashDiscordService {
@@ -40,7 +40,28 @@ export class TrashDiscordService {
         this.job = scheduleJob(`${this.conf.jobSchedule}`, function(){
             informAboutTrash()
         })
+    }
 
+
+    async informAboutTrash() {
+        console.log('trash task ', new Date())
+        var trashDates = await this.client.services.trashService.getNextTrashDates();
+        if (
+            trashDates &&
+            await this.thereHasBeenNoInfoInTheLastDayOrNumberOfMessages()
+        ) {
+            this.sendTrashInfo(trashDates)
+        }
+        await this.askForAction(trashDates)
+        if (this.actionRequest != null && new Date(this.actionRequest.createdTimestamp).getDate() != new Date().getDate()) {
+            if (this.actionRequest.components.length > 0) {
+                this.actionRequest.edit({
+                    content: this.actionRequest.content + "\nhat sich wohl niemand gekümmert :(",
+                    components: []
+                })
+            }
+            this.actionRequest = null
+        }
     }
 
     private async askForAction(trashDates: TrashDate[]) {
@@ -54,9 +75,6 @@ export class TrashDiscordService {
             }
         }
         return
-
-
-
     }
 
     async bringRequestToFront() {
@@ -100,19 +118,6 @@ export class TrashDiscordService {
     }
 
 
-
-    async informAboutTrash() {
-        console.log('trash task ', new Date())
-        var trashDates = await this.client.services.trashService.getNextTrashDates();
-        if (
-            trashDates &&
-            await this.thereHasBeenNoInfoInTheLastDayOrNumberOfMessages()
-        ) {
-            this.sendTrashInfo(trashDates)
-        }
-        this.askForAction(trashDates)
-    }
-
     sendTrashInfo (trashDates: TrashDate[]) {
         console.log('Send trash info')
         trashDates.forEach(trashDate => {
@@ -141,65 +146,20 @@ export class TrashDiscordService {
     }
 
 
+    async handleButtonClick(interaction: Interaction) {
+        if (!interaction.isButton())  return
 
+        try {
+            if (interaction.customId == 'muell-gemacht') {
+                await interaction.reply(`**Danke sehr**, für's  Müll rausbringen, **${interaction.user.globalName}**`);
+                this.actionRequest.edit({content: "Hast du den Müll rausgestellt?\nDone ✔", components: []})
+            } else if (interaction.customId == 'muell-gemacht-anders') {
+                await interaction.reply("**Danke sehr**, für's  Müll rausbringen, wer immer es auch gemacht hat.");
+                this.actionRequest.edit({content: "Hast du den Müll rausgestellt?\nDone ✔", components: []})
+            }
+        } catch (e) {
 
+        }
+    }
 }
 
-
-/*
-
-const { ButtonBuilder, ActionRowBuilder, ButtonStyle, MessageCollector } = require('discord.js')
-module.exports = {
-    data: {
-        name: 'testmuell',
-        description: 'Provides information about the server.',
-    },
-
-    run: async ({ interaction, client, handler }) => {
-        const firstButton = new ButtonBuilder()
-            .setLabel('Hab ich gemacht')
-            .setStyle(ButtonStyle.Primary)
-            .setCustomId('muell-gemacht');
-
-        const actionRow = new ActionRowBuilder().addComponents(firstButton)
-
-        const response = await interaction.reply({
-            content: `Hast du den Muell gemacht?`,
-            components: [actionRow],
-            withResponse: true,
-        });
-
-
-        const collectorFilter = i => i.user.id === interaction.user.id;
-        try {
-            //console.log(response.resource)
-            const confirmation = await response.resource.message.awaitMessageComponent({
-                filter: collectorFilter,
-                time: 10_000
-            });
-
-            if (confirmation.customId === 'muell-gemacht') {
-                await confirmation.update({
-                    content: `${interaction.user.username} hat den Müll rausgestellt. Danke sehr!`,
-                    components: []
-                });
-            } else {
-                await confirmation.deleteReply();
-            }
-        } catch (error) {
-            console.log('Error', error);
-            console.log(JSON.stringify(error))
-            //await interaction.editReply({ content: 'Confirmation not received within time, cancelling', components: [] });
-            //interaction.deleteReply()
-        }
-    },
-
-    options: {
-        devOnly: true,
-        userPermissions: [],
-        botPermissions: [],
-        deleted: false,
-    },
-};
-
-*/
