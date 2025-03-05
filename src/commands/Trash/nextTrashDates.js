@@ -4,7 +4,7 @@ module.exports = {
     description: 'Nennt die nächsten Mülltermine.',
   },
 
-  run: async ({ interaction, client, handler }) => {
+  run: async ({ interaction, client }) => {
     x = await client.services.trashService.getNextTrashDates()
     message = "die nächsten Termine sind: \n"
     x.forEach(trashDate => {

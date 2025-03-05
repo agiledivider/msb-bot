@@ -1,10 +1,9 @@
 // Require the necessary discord.js classes
 require('dotenv').config()
-const { Client, Events, GatewayIntentBits, MessageFlagsStrings, MessageFlagsBitField } = require('discord.js');
+const { Client, GatewayIntentBits } = require('discord.js');
 const { CommandKit } = require('commandkit');
 const { join } = require('path')
 const { TrashService, icsTrashRepository, RealDateService } = require('./Services/TrashService')
-const { TrashDiscordService } = require('./Services/trashDiscordService')
 
 // Create a new client instance
 const client = new Client({
@@ -33,6 +32,12 @@ client.services = {
 }
 
 
+
+
+
+client.login(process.env.DISCORD_BOT_TOKEN);
+
+
 let callAmount = 0;
 process.on('SIGINT', function() {
   if(callAmount < 1) {
@@ -40,12 +45,5 @@ process.on('SIGINT', function() {
     setTimeout(() => process.exit(0), 1000);
   }
   callAmount++;
-});
-
-
-client.login(process.env.DISCORD_BOT_TOKEN);
-
-process.on('SIGINT', function() {
-  console.log('Do something useful here.');
   client.destroy();
 });

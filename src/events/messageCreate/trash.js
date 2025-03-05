@@ -1,5 +1,5 @@
 var stickyMessageId = '1345154394613878918';
-module.exports = async (message, client) => {
+module.exports = async (message) => {
   if (message.author.bot) return;
 
   const fetchedMessages = await message.channel.messages.fetch();
@@ -7,7 +7,7 @@ module.exports = async (message, client) => {
 
   if (stickyMessage) {
     await stickyMessage.delete()
-    newMessage = await message.channel.send({
+    const newMessage = await message.channel.send({
       content: stickyMessage.content,
       components: stickyMessage.components
     });

@@ -1,28 +1,27 @@
-const mqtt = require("mqtt")
-var guild;
-var channel;
+const mqtt = require('mqtt')
+var guild
+var channel
 var lastState
 var statechanges = []
 
-
-const client = mqtt.connect("mqtt://status.makerspacebonn.de", {
+const client = mqtt.connect('mqtt://status.makerspacebonn.de', {
   username: process.env.MQTT_USER,
   password: process.env.MQTT_PASSWORD
-});
+})
 
 function checkChangeAbuse () {
   if (statechanges.length > 4) {
-    statechanges = statechanges.filter(state => state.lastchange > (Date.now()/1000 - 3600))
-    console.log("statechanges",statechanges)
+    statechanges = statechanges.filter(state => state.lastchange > (Date.now() / 1000 - 3600))
+    console.log('statechanges', statechanges)
     if (statechanges.length > 4) {
       channel.send({
-        content: "Hör auf dauernd den Knopf zu drücken!"
+        content: 'Hör auf dauernd den Knopf zu drücken!'
       })
     }
   }
 }
 
-client.on("message", (topic, message) => {
+client.on('message', (topic, message) => {
   state = JSON.parse(message.toString())
 
   if (lastState === state.open) return
@@ -33,37 +32,33 @@ client.on("message", (topic, message) => {
 
   statechanges.push(state)
   lastState = state.open
-  statesting = state.open ? "geöffnet." : "geschlossen."
+  statesting = state.open ? 'geöffnet.' : 'geschlossen.'
   channel.send({
-    content: "Der Makerspace ist nun " + statesting
+    content: 'Der Makerspace ist nun ' + statesting
   })
-  console.log(message.toString());
+  console.log(message.toString())
 
   checkChangeAbuse()
-});
-
-client.on("connect", () => {
-  console.log("connected to mqtt")
-  client.subscribe("msb/state", (err) => {
-    console.log("subscribed")
-  });
-});
-
-client.on("error", (err) => {
-  console.log("error", err)
 })
 
-client.on("close", () => {
-  console.log("mqtt connection closed")
+client.on('connect', () => {
+  console.log('connected to mqtt')
+  client.subscribe('msb/state', (err) => {
+    console.log('subscribed')
+  })
 })
 
-client.on("reconnect", () => {
-  console.log("mqtt connection reconnected")
+client.on('error', (err) => {
+  console.log('error', err)
 })
 
+client.on('close', () => {
+  console.log('mqtt connection closed')
+})
 
-
-
+client.on('reconnect', () => {
+  console.log('mqtt connection reconnected')
+})
 
 module.exports = async (client) => {
 
@@ -76,7 +71,7 @@ module.exports = async (client) => {
     guildId: '1209460505706766376'
   }
 
-  if (client.user.id == '1319391085641994280') {
+  if (client.user.id === '1319391085641994280') {
     conf = test
   } else {
     conf = msb
