@@ -67,9 +67,10 @@ export class TrashDiscordService {
     private async askForAction(trashDates: TrashDate[]) {
         const trashTomorrow = trashDates.filter(trashDate => trashDate.daysUntil(new Date()) == 1)
         if (trashTomorrow.length > 0) {
+            const trashTypes = trashTomorrow.map(t => t.type).join(', ')
             console.log("Today needs to be done something")
             if (this.actionRequest == null) {
-                this.sendRequestForAction()
+                this.sendRequestForAction(trashTypes)
             } else {
                 this.bringRequestToFront()
             }
@@ -98,7 +99,7 @@ export class TrashDiscordService {
         this.sendRequestForAction()
     }
 
-    async sendRequestForAction() {
+    async sendRequestForAction(trashTypes: string = null) {
         const firstButton = new ButtonBuilder()
             .setLabel('Hab ich gemacht')
             .setStyle(ButtonStyle.Primary)
@@ -109,10 +110,15 @@ export class TrashDiscordService {
             .setStyle(ButtonStyle.Secondary)
             .setCustomId('muell-gemacht-anders');
 
-        const actionRow = new ActionRowBuilder().addComponents(firstButton, secondButton)
+        const thirdButton = new ButtonBuilder()
+            .setLabel('Weiß nicht')
+            .setStyle(ButtonStyle.Secondary)
+            .setCustomId('muell-gemacht-keine-ahnung');
 
+        const actionRow = new ActionRowBuilder().addComponents(firstButton, secondButton, thirdButton)
+        trashTypes = trashTypes ? ` (${trashTypes})` : ''
         this.actionRequest = await this.channel.send({
-            content: `**Hast du den Müll rausgestellt?**`,
+            content: `**Hast du den Müll rausgestellt?** ${trashTypes}`,
             components: [actionRow]
         });
     }
@@ -156,6 +162,8 @@ export class TrashDiscordService {
             } else if (interaction.customId == 'muell-gemacht-anders') {
                 await interaction.reply("**Danke sehr**, für's  Müll rausbringen, wer immer es auch gemacht hat.");
                 this.actionRequest.edit({content: "Hast du den Müll rausgestellt?\nDone ✔", components: []})
+            } else if (interaction.customId == 'muell-gemacht-keine-ahnung') {
+                await interaction.reply(`Öhm, Du willst auch nur einfach Knöpfe drücken, oder ${interaction.user.globalName}?`)
             }
         } catch (e) {
 
