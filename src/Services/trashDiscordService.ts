@@ -8,7 +8,8 @@ export class TrashDiscordService {
     guild
     channel
     job
-    private actionRequest: any;
+    private actionRequest: any
+    actionDone: boolean = false
     currentText: number = 0
 
 
@@ -54,20 +55,30 @@ export class TrashDiscordService {
             this.sendTrashInfo(trashDates)
         }
         await this.askForAction(trashDates)
+        if (this.actionRequest) {
+            console.log(
+                new Date(this.actionRequest.createdTimestamp).getDate() != new Date().getDate(),
+                new Date(this.actionRequest.createdTimestamp).getDate(),
+                new Date().getDate()
+            )
+        }
         if (this.actionRequest != null && new Date(this.actionRequest.createdTimestamp).getDate() != new Date().getDate()) {
+            console.log("removing old request")
             if (this.actionRequest.components.length > 0) {
                 this.actionRequest.edit({
                     content: this.actionRequest.content + "\nhat sich wohl niemand gekümmert :(",
                     components: []
                 })
             }
+            this.actionDone = false
             this.actionRequest = null
         }
+
     }
 
     private async askForAction(trashDates: TrashDate[]) {
         const trashTomorrow = trashDates.filter(trashDate => trashDate.daysUntil(new Date()) == 1)
-        if (trashTomorrow.length > 0) {
+        if (trashTomorrow.length > 0 && !this.actionDone) {
             const trashTypes = trashTomorrow.map(t => t.type).join(', ')
             console.log("Today needs to be done something")
             if (this.actionRequest == null) {
@@ -93,10 +104,13 @@ export class TrashDiscordService {
         for (const messageTuple of messages) {
             let [id, message] = messageTuple
             if (message.author.bot && message.content.match(/Hast Du den Müll/i)) {
-                await message.delete()
+                try {
+                    await message.delete()
+                } catch (e) {
+                    console.log("delete error", e)
+                }
             }
         }
-        this.actionRequest = null
         this.sendRequestForAction(trashTypes)
     }
 
@@ -160,9 +174,11 @@ export class TrashDiscordService {
             if (interaction.customId == 'muell-gemacht') {
                 await interaction.reply(`**Danke sehr**, für's  Müll rausbringen, **${interaction.user.globalName}**`);
                 this.actionRequest.edit({content: this.actionRequest.content + "\nDone ✔", components: []})
+                this.actionDone = true
             } else if (interaction.customId == 'muell-gemacht-anders') {
                 await interaction.reply("**Danke sehr**, für's  Müll rausbringen, wer immer es auch gemacht hat.");
                 this.actionRequest.edit({content: this.actionRequest.content + "\nDone ✔", components: []})
+                this.actionDone = true
             } else if (interaction.customId == 'muell-gemacht-keine-ahnung') {
                 const responses = [
                     `Öhm, Du willst auch nur einfach Knöpfe drücken, oder ${interaction.user.globalName}?`,
