@@ -9,6 +9,7 @@ export class TrashDiscordService {
     channel
     job
     private actionRequest: any;
+    currentText: number = 0
 
 
     constructor(client : Client) {
@@ -72,13 +73,13 @@ export class TrashDiscordService {
             if (this.actionRequest == null) {
                 this.sendRequestForAction(trashTypes)
             } else {
-                this.bringRequestToFront()
+                this.bringRequestToFront(trashTypes)
             }
         }
         return
     }
 
-    async bringRequestToFront() {
+    async bringRequestToFront(trashTypes) {
         const messages = await this.channel.messages.fetch({ limit: 50 })
         const firstThreeMessages = Array.from(messages.values()).splice(0,3)
 
@@ -96,7 +97,7 @@ export class TrashDiscordService {
             }
         }
         this.actionRequest = null
-        this.sendRequestForAction()
+        this.sendRequestForAction(trashTypes)
     }
 
     async sendRequestForAction(trashTypes: string = null) {
@@ -118,7 +119,7 @@ export class TrashDiscordService {
         const actionRow = new ActionRowBuilder().addComponents(firstButton, secondButton, thirdButton)
         trashTypes = trashTypes ? ` (${trashTypes})` : ''
         this.actionRequest = await this.channel.send({
-            content: `**Hast du den Müll rausgestellt?** ${trashTypes}`,
+            content: `**Hast du den Müll rausgestellt?** Denn morgen kommt die Müllabfuhr! ${trashTypes}`,
             components: [actionRow]
         });
     }
@@ -158,12 +159,29 @@ export class TrashDiscordService {
         try {
             if (interaction.customId == 'muell-gemacht') {
                 await interaction.reply(`**Danke sehr**, für's  Müll rausbringen, **${interaction.user.globalName}**`);
-                this.actionRequest.edit({content: "Hast du den Müll rausgestellt?\nDone ✔", components: []})
+                this.actionRequest.edit({content: this.actionRequest.content + "\nDone ✔", components: []})
             } else if (interaction.customId == 'muell-gemacht-anders') {
                 await interaction.reply("**Danke sehr**, für's  Müll rausbringen, wer immer es auch gemacht hat.");
-                this.actionRequest.edit({content: "Hast du den Müll rausgestellt?\nDone ✔", components: []})
+                this.actionRequest.edit({content: this.actionRequest.content + "\nDone ✔", components: []})
             } else if (interaction.customId == 'muell-gemacht-keine-ahnung') {
-                await interaction.reply(`Öhm, Du willst auch nur einfach Knöpfe drücken, oder ${interaction.user.globalName}?`)
+                const responses = [
+                    `Öhm, Du willst auch nur einfach Knöpfe drücken, oder ${interaction.user.globalName}?`,
+                    `Wenn du oft genug clickst ${interaction.user.globalName}, dann fällt Dir vielleicht der Finger ab.`,
+                    `War klar, dass Du den Knopf drückst ${interaction.user.globalName}. Du weisst halt nichts.`,
+                    `Lustig ${interaction.user.globalName}, genau so hat Skynet angefangen…`,
+                    `Drück weiter ${interaction.user.globalName}, vielleicht kommt ein neuer Highscore dabei raus!`,
+                    `Wenn du noch dreimal drückst ${interaction.user.globalName}, erscheint vielleicht ein Zauberer und gibt dir einen Keks.`,
+                    `Oh wow, du hast den nutzlosen Knopf gefunden. Herzlichen Glückwunsch, ${interaction.user.globalName}!`,
+                    `Noch ein paar Mal und du beschwörst entweder einen Müll-Dämon oder Du musst vobeikommen und mal echt den Müll rausstellen,  ${interaction.user.globalName}.`,
+                    `Hmm, Du bist also ein Katzenmensch, ${interaction.user.globalName}: Einfach mal alles antippen, was sich bewegt!`,
+                    `Glückwunsch ${interaction.user.globalName}, du hast das geheime Menü für Leute mit zu viel Langeweile gefunden.`,
+                    `Hör auf zu drücken, ${interaction.user.globalName}! Knöpfe haben auch Gefühle!`,
+                    `Super ${interaction.user.globalName}, du hast den versteckten Cheat-Code aktiviert! Leider macht er nur, dass ich dich verspotte, Du Buttonista.`,
+                    `Ich weiss nicht, wie ich es Dir sagen soll, ${interaction.user.globalName}, aber Du hast nichts durchs Knopf drücken erreicht`
+                ]
+                const response = responses[this.currentText]
+                this.currentText = (this.currentText + 1) % responses.length
+                await interaction.reply(response)
             }
         } catch (e) {
 
