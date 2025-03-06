@@ -1,5 +1,5 @@
 import { scheduleJob } from "node-schedule";
-import {ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, Interaction, Message} from "discord.js";
+import {ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, Interaction } from "discord.js";
 import { TrashDate } from "./TrashService";
 
 export class TrashDiscordService {
@@ -102,7 +102,7 @@ export class TrashDiscordService {
         }
         if (informedInTheLastMessages) return
         for (const messageTuple of messages) {
-            let [id, message] = messageTuple
+            let message = messageTuple [1]
             if (message.author.bot && message.content.match(/Hast Du den Müll/i)) {
                 try {
                     await message.delete()
