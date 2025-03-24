@@ -45,4 +45,22 @@ describe("Discord Command Loader", () => {
         client.emit("ready")
         expect(testService).toBeCalledTimes(2)
     })
+
+    test("same Classname", async () => {
+        const {testService, client} = await initTestHandler("sameClassnames")
+
+        expect(testService).not.toHaveBeenCalled()
+        // @ts-ignore
+        client.emit("ready")
+        expect(testService).toBeCalledTimes(2)
+    })
+
+    test("same Handlername", async () => {
+        const {testService, client} = await initTestHandler("sameHandlername")
+
+        expect(testService).not.toHaveBeenCalled()
+        // @ts-ignore
+        client.emit("ready")
+        expect(testService).toBeCalledTimes(2)
+    })
 });

@@ -1,4 +1,4 @@
-import { Client } from "discord.js";
+import {Client, GuildMember} from "discord.js";
 import { Events } from "discord.js";
 import {ActionLoader} from "./ActionLoader";
 
@@ -24,12 +24,8 @@ export class DiscordHandler {
         const actions = await this.actionLoader.load()
 
         actions.forEach((action: any) => {
-            console.log("registering", action)
-            this.client.on(action.eventType, action.run.bind(this, this.client, this))
+            this.client.on(action.eventType.toString(), action.run.bind(this, this.client, this))
         })
-
-        console.log("actions registered", this.client.listeners())
-
     }
 
 
@@ -50,13 +46,19 @@ export interface ActionHandler {
     getName(): string;
 }
 
+
+
 interface EventHandler extends ActionHandler {
-    eventType: Events
+    run: (...args: any[]) => void
 }
 
-
-
 export interface ClientReadyHandler extends EventHandler {
-    run(client: Client, handler: DiscordHandler)
+    eventType: Events.ClientReady
+    run: (client: Client, handler: DiscordHandler) => void
+}
+
+export interface GuildMemberAddHandler extends EventHandler {
+    eventType: Events.GuildMemberAdd
+    run: (client: Client, handler: DiscordHandler, newMember: GuildMember) => void
 }
 

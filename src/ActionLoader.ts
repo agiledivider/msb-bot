@@ -3,7 +3,7 @@ import * as fs from "node:fs";
 import * as path from 'path';
 
 export class ActionLoader {
-    private actions: Map<string, ActionHandler> = new Map();
+    private actions: ActionHandler[] = [];
     private path: string;
     public Ready: Promise<any>;
 
@@ -27,7 +27,7 @@ export class ActionLoader {
             // Process files in the directory
             await this.processDirectory(this.path);
 
-            console.log(`Loaded ${this.actions.size} actions`);
+            console.log(`Loaded ${this.actions.length} actions`);
         } catch (error) {
             console.error('Error loading actions:', error);
             throw error;
@@ -36,7 +36,6 @@ export class ActionLoader {
     }
 
     private async processDirectory(directoryPath: string): Promise<void> {
-        console.log(`Processing directory: ${directoryPath}`);
         const items = fs.readdirSync(directoryPath);
 
         for (const item of items) {
@@ -44,11 +43,8 @@ export class ActionLoader {
             const stats = fs.statSync(itemPath);
 
             if (stats.isDirectory()) {
-                // Recursively process subdirectories
                 await this.processDirectory(itemPath);
             } else if (this.isTypeScriptFile(itemPath)) {
-                console.log(`Processing file: ${itemPath}`);
-                // If it's a TypeScript file, try to load actions from it
                 await this.loadActionsFromFile(itemPath);
             }
         }
@@ -66,26 +62,16 @@ export class ActionLoader {
             // Dynamically import the module
             const importedModule = await import(modulePath);
 
-            console.log(importedModule)
-
             // Check each exported item to see if it's a class implementing Action
             for (const exportName in importedModule) {
                 const exportedItem = importedModule[exportName];
-                console.log(exportedItem, typeof exportedItem)
-
-                // Skip if not a constructor function
                 if (typeof exportedItem !== 'function') continue;
 
                 try {
-                    // Try to instantiate and check if it implements Action
                     const instance = new exportedItem();
-                    console.log(instance)
-
                     if (this.isActionHandler(instance)) {
-                        console.log("instance", instance)
-                        const actionName = instance.getName();
-                        this.actions.set(actionName, instance);
-                        console.log(`Loaded action: ${actionName} from ${filePath}`);
+                        this.actions.push(instance);
+                        console.log(`Loaded action: ${instance.getName()} from ${filePath}`);
                     }
                 } catch (error) {
                     // Skip items that can't be instantiated or don't implement Action
