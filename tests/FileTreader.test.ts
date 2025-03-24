@@ -1,7 +1,6 @@
 import {beforeEach, describe, expect, mock, test} from "bun:test";
 import {DiscordHandler} from "../src/DiscordHandler";
 import {Client} from "discord.js";
-import {ActionLoader} from "../src/ActionLoader";
 
 
 async function initTestHandler(testDirectory: string) {
@@ -23,7 +22,7 @@ describe("Discord Command Loader", () => {
 
     test("load commnd from path",
         async () => {
-            const {testService, client, discordHandler} = await initTestHandler("singleEvent")
+            const {testService, client } = await initTestHandler("singleEvent")
             expect(testService).not.toHaveBeenCalled()
             // @ts-ignore
             client.emit("ready")
@@ -31,7 +30,7 @@ describe("Discord Command Loader", () => {
         })
 
     test("load command subfolder", async () => {
-        const {testService, client, discordHandler} = await initTestHandler("subfolders")
+        const {testService, client} = await initTestHandler("subfolders")
         expect(testService).not.toHaveBeenCalled()
         // @ts-ignore
         client.emit("ready")
@@ -39,7 +38,7 @@ describe("Discord Command Loader", () => {
     })
 
     test("load commnd subfolder", async () => {
-        const {testService, client, discordHandler} = await initTestHandler("multipleEvents")
+        const {testService, client} = await initTestHandler("multipleEvents")
 
         expect(testService).not.toHaveBeenCalled()
         // @ts-ignore
