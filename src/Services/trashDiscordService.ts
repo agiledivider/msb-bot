@@ -11,11 +11,27 @@ export class TrashDiscordService {
     private actionRequest: any
     actionDone: boolean = false
     currentText: number = 0
-
+    private responses = [
+        `Öhm, Du willst auch nur einfach Knöpfe drücken, oder [username]?`,
+        `Wenn du oft genug clickst [username], dann fällt Dir vielleicht der Finger ab.`,
+        `War klar, dass Du den Knopf drückst [username]. Du weisst halt nichts.`,
+        `Lustig [username], genau so hat Skynet angefangen…`,
+        `Drück weiter [username], vielleicht kommt ein neuer Highscore dabei raus!`,
+        `Wenn du noch dreimal drückst [username], erscheint vielleicht ein Zauberer und gibt dir einen Keks.`,
+        `Oh wow, du hast den nutzlosen Knopf gefunden. Herzlichen Glückwunsch, [username]!`,
+        `Noch ein paar Mal und du beschwörst entweder einen Müll-Dämon oder Du musst vobeikommen und mal echt den Müll rausstellen,  [username].`,
+        `Hmm, Du bist also ein Katzenmensch, [username]: Einfach mal alles antippen, was sich bewegt!`,
+        `Glückwunsch [username], du hast das geheime Menü für Leute mit zu viel Langeweile gefunden.`,
+        `Hör auf zu drücken, [username]! Knöpfe haben auch Gefühle!`,
+        `Super [username], du hast den versteckten Cheat-Code aktiviert! Leider macht er nur, dass ich dich verspotte, Du Buttonista.`,
+        `Ich weiss nicht, wie ich es Dir sagen soll, [username], aber Du hast nichts durchs Knopf drücken erreicht`,
+        `Warum drückst Du den Knopf noch selbst, [username]? Du könntest es auch mit einem Servo und einem Pi automatisieren, Du faules Stück.`,
+        `Herzlichen Glückwunsch, [username]! Du bist gerade zum Müllbeauftragen des Makerspaces geworden. Jetzt komm vorbei und stell den Müll raus.`
+    ]
 
     constructor(client : Client) {
         this.client = client
-
+        this.responses
         var msb = {
             channelId: '600337356712575007', // #allgemein
             guildId: '600336147142410254',
@@ -73,7 +89,6 @@ export class TrashDiscordService {
             this.actionDone = false
             this.actionRequest = null
         }
-
     }
 
     private async askForAction(trashDates: TrashDate[]) {
@@ -87,7 +102,6 @@ export class TrashDiscordService {
                 this.bringRequestToFront(trashTypes)
             }
         }
-        return
     }
 
     async bringRequestToFront(trashTypes) {
@@ -193,7 +207,9 @@ export class TrashDiscordService {
                     `Glückwunsch ${interaction.user.globalName}, du hast das geheime Menü für Leute mit zu viel Langeweile gefunden.`,
                     `Hör auf zu drücken, ${interaction.user.globalName}! Knöpfe haben auch Gefühle!`,
                     `Super ${interaction.user.globalName}, du hast den versteckten Cheat-Code aktiviert! Leider macht er nur, dass ich dich verspotte, Du Buttonista.`,
-                    `Ich weiss nicht, wie ich es Dir sagen soll, ${interaction.user.globalName}, aber Du hast nichts durchs Knopf drücken erreicht`
+                    `Ich weiss nicht, wie ich es Dir sagen soll, ${interaction.user.globalName}, aber Du hast nichts durchs Knopf drücken erreicht`,
+                    `Warum drückst Du den Knopf noch selbst, ${interaction.user.globalName}? Du könntest es auch mit einem Servo und einem Pi automatisieren, Du faules Stück.`,
+                    `Herzlichen Glückwunsch, ${interaction.user.globalName}! Du bist gerade zum Müllbeauftragen des Makerspaces geworden. Jetzt komm vorbei und stell den Müll raus.`
                 ]
                 const response = responses[this.currentText]
                 this.currentText = (this.currentText + 1) % responses.length
