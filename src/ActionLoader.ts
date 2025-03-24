@@ -5,7 +5,6 @@ import * as path from 'path';
 export class ActionLoader {
     private actions: ActionHandler[] = [];
     private path: string;
-    public Ready: Promise<any>;
 
 
     constructor(options: ActionLoaderOptions) {
@@ -13,7 +12,7 @@ export class ActionLoader {
     }
 
 
-    async load() {
+    load() {
         try {
             // Ensure the directory exists
             if (this.path === undefined || this.path === null || this.path === '') {
@@ -25,7 +24,7 @@ export class ActionLoader {
             }
 
             // Process files in the directory
-            await this.processDirectory(this.path);
+            this.processDirectory(this.path);
 
             console.log(`Loaded ${this.actions.length} actions`);
         } catch (error) {
@@ -35,7 +34,7 @@ export class ActionLoader {
         return this.actions
     }
 
-    private async processDirectory(directoryPath: string): Promise<void> {
+    private  processDirectory(directoryPath: string): void {
         const items = fs.readdirSync(directoryPath);
 
         for (const item of items) {
@@ -43,9 +42,9 @@ export class ActionLoader {
             const stats = fs.statSync(itemPath);
 
             if (stats.isDirectory()) {
-                await this.processDirectory(itemPath);
+                this.processDirectory(itemPath);
             } else if (this.isTypeScriptFile(itemPath)) {
-                await this.loadActionsFromFile(itemPath);
+                this.loadActionsFromFile(itemPath);
             }
         }
     }
@@ -54,14 +53,13 @@ export class ActionLoader {
         return filePath.endsWith('.ts') && !filePath.endsWith('.d.ts');
     }
 
-    private async loadActionsFromFile(filePath: string): Promise<void> {
+    private loadActionsFromFile(filePath: string): void {
         try {
             // Convert file path to module path
             const modulePath = this.filePathToModulePath(filePath);
 
             // Dynamically import the module
-            const importedModule = await import(modulePath);
-
+            const importedModule = require(modulePath);
             // Check each exported item to see if it's a class implementing Action
             for (const exportName in importedModule) {
                 const exportedItem = importedModule[exportName];

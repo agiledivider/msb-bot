@@ -1,5 +1,5 @@
 import {describe, expect, test, beforeEach, mock} from "bun:test";
-import {DiscordHandler} from "../src/DiscordHandler";
+import {DiscordHandler} from "../../src/DiscordHandler";
 import {Client} from "discord.js";
 
 describe("Discord Handler - Services", () => {

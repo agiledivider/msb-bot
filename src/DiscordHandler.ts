@@ -18,11 +18,11 @@ export class DiscordHandler {
         this.actionLoader = new ActionLoader({
             path: options.handlerPath
         })
+        this.registerActions()
     }
 
-    async registerActions() {
-        const actions = await this.actionLoader.load()
-
+    private registerActions() {
+        const actions = this.actionLoader.load()
         actions.forEach((action: any) => {
             this.client.on(action.eventType.toString(), action.run.bind(this, this.client, this))
         })
