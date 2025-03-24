@@ -1,0 +1,15 @@
+List of upcoming features
+- **welcome new users**
+- **help out new members with information**
+- **event info**
+  - announce events of the next 14 days
+  - announce event 1 day before
+  - list all events
+  - tell info about msb events
+- **inventory**
+  - tell me where i might find stuff
+  - tell me where i have to put stuff
+- **projects**
+  - inform about current projects
+- **knowledge**
+  - who has what knowledge
