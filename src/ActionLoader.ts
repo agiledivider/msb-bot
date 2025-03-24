@@ -1,5 +1,4 @@
-import {Client} from "discord.js";
-import {ActionHandler, DiscordHandler} from "./DiscordHandler";
+import {ActionHandler} from "./DiscordHandler";
 import * as fs from "node:fs";
 import * as path from 'path';
 

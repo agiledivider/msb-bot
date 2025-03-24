@@ -1,5 +1,4 @@
 import { Client } from "discord.js";
-import * as path from "node:path";
 import { Events } from "discord.js";
 import {ActionLoader} from "./ActionLoader";
 
