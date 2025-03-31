@@ -1,5 +1,5 @@
 import { scheduleJob } from "node-schedule";
-import {ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, Interaction } from "discord.js";
+import {ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, Interaction, Message} from "discord.js";
 import { TrashDate } from "./TrashService";
 
 export class TrashDiscordService {
@@ -109,7 +109,7 @@ export class TrashDiscordService {
         const firstThreeMessages = Array.from(messages.values()).splice(0,3)
 
         let informedInTheLastMessages = false
-        for (const message of firstThreeMessages) {
+        for (const message of firstThreeMessages as Message[]) {
             if (message.author.bot && message.content.match(/Hast Du den Müll/i)) {
                 informedInTheLastMessages = true
             }
