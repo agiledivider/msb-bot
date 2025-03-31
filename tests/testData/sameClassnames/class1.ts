@@ -2,7 +2,7 @@ import {Client, Events} from "discord.js";
 import {ClientReadyHandler, DiscordHandler} from "../../../src/DiscordHandler";
 
 class TestReadyHandler implements ClientReadyHandler {
-    eventType = Events.ClientReady
+    eventType: Events.ClientReady = Events.ClientReady
     getName(): string {
         return "testService"
     }

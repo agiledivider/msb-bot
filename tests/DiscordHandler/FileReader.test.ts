@@ -5,7 +5,7 @@ import {Client} from "discord.js";
 
 async function initTestHandler(testDirectory: string) {
     const testService = mock(() => {})
-    const client = new Client ({intents: [] })
+    const client = new Client ({ intents: [] })
     const discordHandler = new DiscordHandler({
         handlerPath: __dirname + "/../testData/" + testDirectory,
         client
