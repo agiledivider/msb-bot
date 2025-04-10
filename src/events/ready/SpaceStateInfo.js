@@ -33,9 +33,16 @@ client.on('message', (topic, message) => {
   statechanges.push(state)
   lastState = state.open
   statesting = state.open ? 'geöffnet.' : 'geschlossen.'
-  channel.send({
-    content: 'Der Makerspace ist nun ' + statesting
-  })
+  if (state.open && state.openUntil) {
+    channel.send({
+      content: 'Der Makerspace ist ziemlich sicher bis ' + state.openUntil + ' ' + statesting
+    })
+  } else {
+    channel.send({
+      content: 'Der Makerspace ist nun ' + statesting
+    })
+  }
+
   console.log(message.toString())
 
   checkChangeAbuse()
