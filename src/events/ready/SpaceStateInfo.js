@@ -23,15 +23,15 @@ function checkChangeAbuse () {
 
 client.on('message', (topic, message) => {
   state = JSON.parse(message.toString())
-
-  if (lastState === state.open) return
   if (lastState === undefined) {
-    lastState = state.open
+    lastState = state
     return
   }
 
+  if (lastState.open === state.open && lastState.openUntil === state.openUntil) return
+
   statechanges.push(state)
-  lastState = state.open
+  lastState = state
   statesting = state.open ? 'geöffnet.' : 'geschlossen.'
   if (state.open && state.openUntil) {
     channel.send({
