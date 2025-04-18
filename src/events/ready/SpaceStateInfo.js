@@ -35,7 +35,7 @@ client.on('message', (topic, message) => {
   statesting = state.open ? 'geöffnet.' : 'geschlossen.'
   if (state.open && state.openUntil) {
     channel.send({
-      content: 'Der Makerspace ist ziemlich sicher bis ' + state.openUntil + ' ' + statesting
+      content: 'Der Makerspace ist bis ' + state.openUntil + ' ' + statesting
     })
   } else {
     channel.send({
