@@ -11,7 +11,7 @@ export default class WelcomeMessage implements GuildMemberAddHandler{
         try {
             this.channel = newMember.guild.channels.cache.get(process.env.WELCOME_CHANNEL_ID)
             this.channel.send({
-                content: `**Willkommen ${newMember.displayName}**! Schön, dass Du da bist.`
+                content: `**Willkommen <@${newMember.id}>**! Schön, dass Du da bist.`
             })
         } catch (e) {
             console.log(e)
