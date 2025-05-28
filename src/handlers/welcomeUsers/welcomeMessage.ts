@@ -29,11 +29,11 @@ export default class WelcomeMessage implements GuildMemberAddHandler{
         try {
             this.channel = newMember.guild.channels.cache.get(process.env.WELCOME_CHANNEL_ID)
             const message = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)].replace(/\[user]/g, `<@${newMember.id}>`);
-            /*
+
             newMember.send({
                 content: `Hallo ${newMember.displayName}! \n\nFalls Du schon Mitglie bist und einen Code mitgenommen hast, kannst Du Dich mit dem Command "/membercode <code>" für den Mitgliederbereich freischalten.`
             })
-            */
+
             this.channel.send({
                 content: message
             })
