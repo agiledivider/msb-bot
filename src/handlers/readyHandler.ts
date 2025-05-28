@@ -1,5 +1,5 @@
 import { Client, Events } from "discord.js";
-import {ClientReadyHandler, DiscordHandler} from "../DiscordHandler";
+import {ClientReadyHandler, DiscordHandler} from "../DiscordHandler/DiscordHandler";
 
  class ReadyHandler implements ClientReadyHandler {
     eventType: Events.ClientReady = Events.ClientReady;

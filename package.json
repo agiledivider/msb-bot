@@ -4,7 +4,9 @@
   "description": "Discord Bot for the makerspace in bonn",
   "main": "src/index.js",
   "scripts": {
-    "test": "echo \"we test in production\""
+    "test": "echo \"we test in production\"",
+    "db:migrate": "drizzle-kit migrate",
+    "db:generate": "drizzle-kit generate"
   },
   "author": "",
   "license": "ISC",
@@ -14,16 +16,20 @@
     "date-diff": "^1.0.2",
     "discord.js": "^14.17.3",
     "dotenv": "^16.4.7",
+    "drizzle": "^1.4.0",
+    "drizzle-orm": "^0.43.1",
     "mongoose": "^8.10.1",
     "mqtt": "^5.10.3",
     "node-ical": "^0.20.1",
     "node-schedule": "^2.1.1",
-    "nodemailer": "^6.10.0"
+    "nodemailer": "^6.10.0",
+    "pg": "^8.16.0"
   },
   "devDependencies": {
     "@types/bun": "^1.2.5",
     "@types/jest": "^29.5.14",
     "@types/node-schedule": "^2.1.7",
+    "drizzle-kit": "^0.31.1",
     "eslint": "^9.17.0",
     "ts-jest": "^29.2.6"
   }

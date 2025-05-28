@@ -1,0 +1,1 @@
+ALTER TABLE "membercodes" ADD COLUMN "usedAt" timestamp;

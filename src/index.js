@@ -1,10 +1,32 @@
 // Require the necessary discord.js classes
+import { ChannelFlagsBitField } from 'discord.js'
+
 require('dotenv').config()
 const { Client, GatewayIntentBits } = require('discord.js');
 const { CommandKit } = require('commandkit');
 const { join } = require('path')
 const { TrashService, icsTrashRepository, RealDateService } = require('./Services/TrashService')
-const { DiscordHandler } = require('./DiscordHandler')
+const { DiscordHandler } = require('./DiscordHandler/DiscordHandler')
+import {migrate} from 'drizzle-orm/node-postgres/migrator';
+import * as schema from "./db/schema";
+
+async function migrateDB() {
+  console.log("migrating")
+  const db = drizzle(process.env.DATABASE_URL, {schema})
+  await migrate(db, {
+    migrationsFolder: __dirname + "/db/migrations/",
+    migrationsTable: "migrations",
+    migrationsSchema: "makerspace_bot"
+  });
+  console.log("migration done")
+}
+
+
+try {
+  //await migrateDB();
+} catch (e) {
+  console.log(e)
+}
 
 // Create a new client instance
 const client = new Client({
@@ -38,6 +60,12 @@ const trashService = new TrashService(new icsTrashRepository(__dirname + '/muell
 
 discordHandler.addService('dateService', realDateService)
 discordHandler.addService('trashService', trashService)
+
+import { drizzle } from 'drizzle-orm/node-postgres';
+const db = drizzle(process.env.DATABASE_URL);
+
+
+
 // services
 client.services = {
   trashService,
@@ -45,6 +73,12 @@ client.services = {
 }
 
 client.on('ready', () => {
+  console.log('Ready! ---------------------');
+  const guilds = client.guilds.cache.map(guild => guild);
+  for (const guildInfo of guilds) {
+    console.log(guildInfo.id, guildInfo.name)
+    console.log(guildInfo.members.me.permissions.serialize())
+  }
   console.log(`Logged in as ${client.user.tag}!`);
 });
 
