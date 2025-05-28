@@ -39,16 +39,9 @@ export class TrashDiscordService {
             messageLimit: 30,
             reminderLimit: 10
         }
-        var test = {
-            channelId: '1209460505706766381', // #allgemein
-            guildId: '1209460505706766376',
-            jobSchedule: "*/10 * * * * *", // alle 10 sekunden
-            messageLimit: 5,
-            reminderLimit: 3
-        }
-
+        const config = require('../../config.json');
         if (this.client?.user?.id == '1319391085641994280') {
-            this.conf = test
+            this.conf = config.trashInfo
         } else {
             this.conf = msb
         }
