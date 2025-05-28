@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, mock, test} from "bun:test";
-import {DiscordHandler} from "../../src/DiscordHandler";
+import {DiscordHandler} from "../../src/DiscordHandler/DiscordHandler";
 import {Client} from "discord.js";
 
 
