@@ -9,7 +9,7 @@ import {
 import {CommandHandler} from "../../DiscordHandler/DiscordHandler";
 import {drizzle} from "drizzle-orm/node-postgres";
 import * as schema from "../../db/schema";
-import {eq} from "drizzle-orm";
+import {eq, and} from "drizzle-orm";
 import {NodePgDatabase} from "drizzle-orm/node-postgres/driver";
 const appConfig = require('../../../msb.config')
 
@@ -62,7 +62,7 @@ class MembercodeCommand {
     constructor({interaction}: { interaction: ChatInputCommandInteraction }) {
         this.interaction = interaction
         this.promise = Promise.resolve();
-        this.db = drizzle(process.env.DATABASE_URL, {schema})
+        this.db = drizzle(process.env.DATABASE_URL, {schema, logger: true});
     }
 
     showUserThatWeAreProcessing() : this {
@@ -96,17 +96,27 @@ class MembercodeCommand {
 
     informAboutErrors() {
         this.promise.catch((error: Error) => {
-            this.interaction.editReply({content: error.message})
+            if (error instanceof ValidationError) {
+                this.interaction.editReply({content: error.message})
+                return
+            }
+            this.interaction.editReply({content: "Ein Fehler ist aufgetreten. Sorry, keine Ahnung, was da passiert ist."})
+            console.error(error)
         })
 
     }
 
     validateThatCodeExistsAndHasntBeenUsed() {
         this.promise = this.promise.then(async ([code_part1, code_part2, code]) => {
+            console.log("1")
             const memberCode = await this.db.query.memberCodesTable.findFirst({where: (codes) =>
-                eq(codes.code, code_part1) && eq(codes.id, parseInt(code_part2) && eq(codes.guildId, this.interaction.guild.id))
+                and(
+                    eq(codes.code, code_part1),
+                    eq(codes.id, parseInt(code_part2)),
+                    eq(codes.guildId, this.interaction.guild.id)
+                )
             })
-
+            console.log("2")
             if (!memberCode || memberCode.code != code_part1) {
                 throw new ValidationError(`Den Code **${code}** haben wir leider nicht gefunden.`);
             }
