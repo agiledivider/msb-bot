@@ -36,8 +36,8 @@ export class MembercodeCommandHandler implements CommandHandler {
             .validateIfAlreadyMember()
             .validateEnteredCode()
             .validateThatCodeExistsAndHasntBeenUsed()
-            .markCodeAsUsed()
             .assignMemberRole()
+            .markCodeAsUsed()
             .informUserAboutSuccess()
             .informAboutErrors()
     }
@@ -87,7 +87,7 @@ class MembercodeCommand {
             const code = this.interaction.options.getString('code')
             let [code_part1, code_part2] = code.split("-")
             if ( parseInt(code_part2).toString() != code_part2) {
-                throw new Error(`Der Code **${code}** ist ungueltig.`)
+                throw new ValidationError(`Der Code **${code}** ist ungueltig.`)
             }
             return [code_part1, code_part2, code]
         })
@@ -141,8 +141,14 @@ class MembercodeCommand {
     }
 
     assignMemberRole() {
-        this.promise = this.promise.then(() => {
-            this.interaction.guild.members.cache.get(this.interaction.user.id).roles.add(appConfig.membercodes.roleId)
+        this.promise = this.promise.then(async (memberCode) => {
+            try {
+                await this.interaction.guild.members.cache.get(this.interaction.user.id).roles.add(appConfig.membercodes.roleId)
+            } catch (e) {
+                console.error(e)
+                throw new ValidationError(`Sorry, ich darf Dich gar nicht freischalten. Vielleicht erlaubt mir das ja irgendwann jemand. solange sprich doch einfach <@689378839478009856> oder <@660471943866220544> an.`)
+            }
+            return memberCode
         })
         return this
     }
