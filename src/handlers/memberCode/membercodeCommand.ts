@@ -155,7 +155,7 @@ class MembercodeCommand {
 
     informUserAboutSuccess() {
         this.promise = this.promise.then(() => {
-            this.interaction.editReply({content: `Es haben sich Dinge für Dich verändert, <@${this.interaction.user.id}>. /n/n**Willkommen im Mitgliederbereich!**/n Ab nun solltest Du den internen Bereich sehen können bei den Discord Kanälen. Weitere Infos schicke ich Dir per DM.`});
+            this.interaction.editReply({content: `**Willkommen im Mitgliederbereich, <@${this.interaction.user.id}>!**\nAb nun solltest Du den internen Bereich mit allen Kanälen sehen können, wie zum Beispiel <#${appConfig.membercodes.exampleInternalChannelId}>. \nWeitere Infos schicke ich Dir per DM.`});
         })
         return this
     }
