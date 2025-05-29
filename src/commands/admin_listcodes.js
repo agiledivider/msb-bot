@@ -3,6 +3,8 @@ const { drizzle } = require('drizzle-orm/node-postgres')
 const schema = require('../db/schema')
 const config = require('../../msb.config.json')
 const { isNull } = require('drizzle-orm')
+const {eq, and} = require("drizzle-orm")
+
 
 module.exports = {
   data:  new SlashCommandBuilder()
@@ -19,11 +21,17 @@ module.exports = {
 
 
     const db = drizzle(process.env.DATABASE_URL, {schema, logger: true});
-    const unusedCodes = await db.query.memberCodesTable.findMany({where: (codes) => isNull(codes.userId) && eq(codes.guildId, interaction.guild.id)})
+    const unusedCodes = await db.query.memberCodesTable.findMany({where: (codes) =>
+      and(
+        isNull(codes.usedAt),
+        isNull(codes.userId),
+        eq(codes.guildId, interaction.guild.id)
+      )
+    })
     console.log(unusedCodes)
 
     let text = "";
-    if (unusedCodes.length == 0) {
+    if (unusedCodes.length === 0) {
       interaction.editReply({content: "Keine Codes gefunden"});
       return
     }
