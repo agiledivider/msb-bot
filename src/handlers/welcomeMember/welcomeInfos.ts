@@ -33,7 +33,8 @@ export default class MemberWelcomeMessage implements GuildMemberUpdateHandler {
             if (role.id === config.newMemberWelcome.roleId) {
                 const channel = newMember.guild.channels.cache.get(config.newMemberWelcome.channelId);
                 if (channel && channel instanceof TextChannel) {
-                    channel.send(`Begrüsst ${newMember} als neustes Mitglied im MakerSpace!`);
+                    const message = await channel.send(`Begrüsst ${newMember} als neustes Mitglied im MakerSpace!`);
+                    await message.react('👋');
                 }
                 const welcomeMessage = await readFile(__dirname + "/welcomeDM.md", 'utf-8');
                 try {
