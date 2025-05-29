@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, MessageFlags } = require('discord.js')
 const { drizzle } = require('drizzle-orm/node-postgres')
 const schema = require('../db/schema')
-const config = require('../../config')
+const config = require('../../msb.config.json')
 const { isNull } = require('drizzle-orm')
 
 module.exports = {

@@ -1,18 +1,17 @@
 import {
     ChatInputCommandInteraction,
     Client,
-    Events,
     GuildMemberRoleManager,
     Interaction,
     MessageFlags,
     SlashCommandBuilder
 } from "discord.js";
-import {CommandHandler,DiscordHandler} from "../../DiscordHandler/DiscordHandler";
+import {CommandHandler} from "../../DiscordHandler/DiscordHandler";
 import {drizzle} from "drizzle-orm/node-postgres";
 import * as schema from "../../db/schema";
 import {eq} from "drizzle-orm";
 import {NodePgDatabase} from "drizzle-orm/node-postgres/driver";
-const appConfig = require('../../../config')
+const appConfig = require('../../../msb.config')
 
 export class MembercodeCommandHandler implements CommandHandler {
 

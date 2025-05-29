@@ -39,7 +39,7 @@ export class TrashDiscordService {
             messageLimit: 30,
             reminderLimit: 10
         }
-        const config = require('../../config.json');
+        const config = require('../../msb.config.json');
         if (this.client?.user?.id == '1319391085641994280') {
             this.conf = config.trashInfo
         } else {
