@@ -104,7 +104,7 @@ class MembercodeCommand {
     validateThatCodeExistsAndHasntBeenUsed() {
         this.promise = this.promise.then(async ([code_part1, code_part2, code]) => {
             const memberCode = await this.db.query.memberCodesTable.findFirst({where: (codes) =>
-                eq(codes.code, code_part1) && eq(codes.id, parseInt(code_part2))
+                eq(codes.code, code_part1) && eq(codes.id, parseInt(code_part2) && eq(codes.guildId, this.interaction.guild.id))
             })
 
             if (!memberCode || memberCode.code != code_part1) {
