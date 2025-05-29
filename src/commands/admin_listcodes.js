@@ -19,7 +19,7 @@ module.exports = {
 
 
     const db = drizzle(process.env.DATABASE_URL, {schema, logger: true});
-    const unusedCodes = await db.query.memberCodesTable.findMany({where: (codes) => isNull(codes.userId)})
+    const unusedCodes = await db.query.memberCodesTable.findMany({where: (codes) => isNull(codes.userId) && eq(codes.guildId, interaction.guild.id)})
     console.log(unusedCodes)
 
     let text = "";
