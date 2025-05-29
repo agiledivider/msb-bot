@@ -1,38 +1,148 @@
-import {Client, Events, Interaction, MessageFlags, SlashCommandBuilder} from "discord.js";
+import {
+    ChatInputCommandInteraction,
+    Client,
+    Events,
+    GuildMemberRoleManager,
+    Interaction,
+    MessageFlags,
+    SlashCommandBuilder
+} from "discord.js";
 import {CommandHandler,DiscordHandler} from "../../DiscordHandler/DiscordHandler";
 import {drizzle} from "drizzle-orm/node-postgres";
 import * as schema from "../../db/schema";
+import {eq} from "drizzle-orm";
+import {NodePgDatabase} from "drizzle-orm/node-postgres/driver";
+const appConfig = require('../../../config')
 
-class MembercodeCommandHandler implements CommandHandler {
+export class MembercodeCommandHandler implements CommandHandler {
+
     command = new SlashCommandBuilder()
-        .setName("membercode")
-        .setDescription("a member can use a code to get the member role")
-        .addStringOption(
-            option => option.setName("code").setDescription("the code").setRequired(true)
-        );
+        .setName('membercode')
+        .setDescription('Enter your member code and instantly get accepted as full makerspace member in discord')
+        .setDescriptionLocalizations({
+            "de": "Gib Deinen Mitgliedscode ein und erhalte sofort Zugriff auf den internen Bereich"
+        })
+        .addStringOption(option =>
+            option.setName('code')
+                .setDescription('the code')
+                .setRequired(true)
+        ).toJSON()
 
 
-    async run(client: Client, interaction: Interaction) {
+    async run(client: Client, interaction: Interaction): Promise<void> {
         if (!interaction.isChatInputCommand()) return
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral })
-        const code = interaction.options.getString('code')
-        const db = drizzle(process.env.DATABASE_URL as string, {schema, logger: true});
-        const memberCode = await db.query.memberCodesTable.findFirst({with: {code: code}})
-        console.log(memberCode)
-        if (!memberCode) {
-            interaction.editReply({content: "code not found"});
-            return;
-        }
-
-
-        interaction.editReply({content: `Things have changed for you. Welcome to the makerspace`});
-
-
-
+        const command = new MembercodeCommand({interaction})
+        await command
+            .showUserThatWeAreProcessing()
+            .validateIfAlreadyMember()
+            .validateEnteredCode()
+            .validateThatCodeExistsAndHasntBeenUsed()
+            .markCodeAsUsed()
+            .assignMemberRole()
+            .informUserAboutSuccess()
+            .informAboutErrors()
     }
 
     getName(): string {
-        return "some test ready handler"
+        return this.command.name
+    }
+}
+
+class ValidationError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "ValidationError";
+    }
+}
+
+class MembercodeCommand {
+    private promise: Promise<any>;
+    private interaction: ChatInputCommandInteraction;
+    private db: NodePgDatabase<typeof import("../../db/schema")>;
+
+    constructor({interaction}: { interaction: ChatInputCommandInteraction }) {
+        this.interaction = interaction
+        this.promise = Promise.resolve();
+        this.db = drizzle(process.env.DATABASE_URL, {schema})
+    }
+
+    showUserThatWeAreProcessing() : this {
+        this.promise = this.promise.then(() => {
+            return this.interaction.deferReply({flags: MessageFlags.Ephemeral})
+        })
+        return this
+    }
+
+    validateIfAlreadyMember() : this {
+        this.promise = this.promise.then(() => {
+            console.log("inside promise")
+            if(this.interaction.member.roles instanceof GuildMemberRoleManager && this.interaction.member.roles.cache.has(appConfig.membercodes.roleId)) {
+                throw new ValidationError('Du bist doch schon Mitglied. Hör auf rumzuspielen und bastel lieber was für den MakerSpacce.')
+            }
+        })
+        return this
+    }
+
+    validateEnteredCode() : this {
+        this.promise = this.promise.then(() => {
+            const code = this.interaction.options.getString('code')
+            let [code_part1, code_part2] = code.split("-")
+            if ( parseInt(code_part2).toString() != code_part2) {
+                throw new Error(`Der Code **${code}** ist ungueltig.`)
+            }
+            return [code_part1, code_part2, code]
+        })
+        return this
+    }
+
+    informAboutErrors() {
+        this.promise.catch((error: Error) => {
+            this.interaction.editReply({content: error.message})
+        })
+
+    }
+
+    validateThatCodeExistsAndHasntBeenUsed() {
+        this.promise = this.promise.then(async ([code_part1, code_part2, code]) => {
+            const memberCode = await this.db.query.memberCodesTable.findFirst({where: (codes) =>
+                eq(codes.code, code_part1) && eq(codes.id, parseInt(code_part2))
+            })
+
+            if (!memberCode || memberCode.code != code_part1) {
+                throw new ValidationError(`Den Code **${code}** haben wir leider nicht gefunden.`);
+            }
+
+            if(memberCode.userId) {
+                throw new ValidationError(`Der Code **${code}** wurde bereits verwendet.`);
+            }
+            return memberCode
+
+        })
+        return this
+    }
+
+    markCodeAsUsed() {
+        this.promise = this.promise.then(async (memberCode) => {
+            const x = await this.db.update(schema.memberCodesTable)
+                .set({userId: this.interaction.user.id, usedAt: new Date()})
+                .where(eq(schema.memberCodesTable.id, parseInt(memberCode.id)))
+            console.log(x)
+        })
+        return this
+    }
+
+    assignMemberRole() {
+        this.promise = this.promise.then(() => {
+            this.interaction.guild.members.cache.get(this.interaction.user.id).roles.add(appConfig.membercodes.roleId)
+        })
+        return this
+    }
+
+    informUserAboutSuccess() {
+        this.promise = this.promise.then(() => {
+            this.interaction.editReply({content: `Es haben sich Dinge für Dich verändert, <@${this.interaction.user.id}>. /n/n**Willkommen im Mitgliederbereich!**/n Ab nun solltest Du den internen Bereich sehen können bei den Discord Kanälen. Weitere Infos schicke ich Dir per DM.`});
+        })
+        return this
     }
 }
 

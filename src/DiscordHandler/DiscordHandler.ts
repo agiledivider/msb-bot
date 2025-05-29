@@ -198,6 +198,11 @@ export interface GuildMemberAddHandler extends EventHandler {
     run: (client: Client, handler: DiscordHandler, newMember: GuildMember) => void
 }
 
+export interface GuildMemberUpdateHandler extends EventHandler {
+    eventType: Events
+    run: (client: Client, handler: DiscordHandler, oldMember: GuildMember, newMember: GuildMember) => void
+}
+
 
 function mergeDeep<T, U>(
     target: T,
