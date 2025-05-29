@@ -1,4 +1,4 @@
 /.env
 node_modules
-msb.config.json
+**/*config.json
 .idea
