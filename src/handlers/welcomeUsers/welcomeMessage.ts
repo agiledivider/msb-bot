@@ -16,7 +16,7 @@ export default class WelcomeMessage implements GuildMemberAddHandler{
             "**Willkommen [user]**! Schön, dass Du da bist.",
             "🎉**Willkomen [user]**! Bist du hier, damit jemand deine Lötunfälle bewundert? Oder was treibt Dich her?",
             "👋 **Willkommen [user]**! Warnung: Bei uns wird gesägt, gelötet, gebastelt und manchmal auch verzweifelt. Was machst Du gerne?",
-            "**Willkommen [user]**! 🚨 Aber Acthung: Dieser Server enthält Späne, Kaffee-Flecken und Leute, die über Pis reden, als wären sie Kuchen. Worüber redest Du gerne?",
+            "**Willkommen [user]**! 🚨 Aber Achtung: Dieser Server enthält Späne, Kaffee-Flecken und Leute, die über PIs reden, als wären sie Kuchen. Worüber redest Du gerne?",
             "**Willkommen [user]**! Falls du jemals ‘Ich brauche nur fünf Minuten’ sagst – wir haben auch eine Selbsthilfegruppe. Was machst Du so in 5 Minuten?",
             "**Willkommen [user]**! Der MakerSpace ist voller Menschen, die ‘nur kurz was fragen’ und zack, ist der Abend um. Welches Thema sorgt bei Dir dafür?",
             "**Willkommen [user]!** Falls Du nicht aus versehen hier bist, was treibt Dich her?",
