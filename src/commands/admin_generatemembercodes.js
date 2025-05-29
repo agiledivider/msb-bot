@@ -50,7 +50,7 @@ module.exports = {
     }
 
     const codeList = codes.join("\n")
-    interaction.editReply({content: `Things have changed for you. \n${codeList}\nWelcome to the makerspace`});
+    interaction.editReply({content: `Ich habe folgende Codes generiert: \n\n${codeList}`});
 
 
 
