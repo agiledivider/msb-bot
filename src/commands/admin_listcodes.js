@@ -23,6 +23,11 @@ module.exports = {
     console.log(unusedCodes)
 
     let text = "";
+    if (unusedCodes.length == 0) {
+      interaction.editReply({content: "Keine Codes gefunden"});
+      return
+    }
+
     for (let i = 0; i < unusedCodes.length; i++) {
       text += unusedCodes[i].code + "-" + unusedCodes[i].id + "\n";
     }
