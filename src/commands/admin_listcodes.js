@@ -40,7 +40,7 @@ module.exports = {
       text += unusedCodes[i].code + "-" + unusedCodes[i].id + "\n";
     }
 
-    interaction.editReply({content: `Diese Codes sind noch nicht genutzt: \n${text}\n`});
+    interaction.editReply({content: `Diese Codes sind noch nicht genutzt: \n${text}`});
   },
 
   options: {
