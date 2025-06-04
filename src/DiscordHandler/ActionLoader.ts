@@ -1,4 +1,4 @@
-import {ActionHandler} from "./DiscordHandler";
+import {ActionHandler, CommandHandler, EventHandler} from "./DiscordHandler";
 import * as fs from "node:fs";
 import * as path from 'path';
 
@@ -57,6 +57,7 @@ export class ActionLoader {
         try {
             // Convert file path to module path
             const modulePath = this.filePathToModulePath(filePath);
+            const fileInfo = filePath.replace(this.path, '')
 
             // Dynamically import the module
             const importedModule = require(modulePath);
@@ -69,10 +70,15 @@ export class ActionLoader {
                     const instance = new exportedItem();
                     if (this.isActionHandler(instance)) {
                         this.actions.push(instance);
-                        console.log(`Loaded action: ${instance.getName()} from ${filePath}`);
+                        if (this.isEventHandler(instance)) {
+                            console.log(`Loaded EventHandler: ${instance.eventType} from ${fileInfo}`);
+                        } else if (this.isCommandHandler(instance)) {
+                            console.log(`Loaded CommandHandler: ${instance.command.name} from ${fileInfo}`);
+                        } else {
+                            console.log(`Loaded action: ${instance.getName()} from ${fileInfo}`);
+                        }
                     }
                 } catch (error) {
-                    // Skip items that can't be instantiated or don't implement Action
                     console.log(error)
                 }
             }
@@ -94,8 +100,23 @@ export class ActionLoader {
             typeof obj.getName === 'function'
         );
     }
+
+    private isEventHandler(obj: any): obj is EventHandler {
+        return (
+            obj &&
+            typeof obj.eventType === 'string'
+        );
+    }
+
+    private isCommandHandler(obj: any): obj is CommandHandler {
+        return (
+            obj &&
+            typeof obj.command === 'object'
+        );
+    }
 }
 
 export interface ActionLoaderOptions {
     path: string
+    logger?: Logger
 }

@@ -1,11 +1,18 @@
-import {Client, GuildMember, SlashCommandBuilder} from "discord.js";
+import {
+    ApplicationCommand, ApplicationCommandData,
+    Client,
+    GuildMember,
+    REST,
+    Routes,
+} from "discord.js";
 import { Events } from "discord.js";
 import {ActionLoader} from "./ActionLoader";
 import {ContextAppendType, DiscordEventMap, EventContext, Reconcile} from "./types";
 
 export interface DiscordHandlerOptions {
     client: Client,
-    handlerPath: string
+    handlerPath: string,
+    registerCommands?: boolean
 }
 
 
@@ -17,6 +24,7 @@ export class DiscordHandler<Decorators = {}> {
     private options: DiscordHandlerOptions
     readonly commands: Map<string, CommandHandler> = new Map();
     readonly events: Map<string, EventHandler> = new Map();
+    private rest: REST
 
     constructor (
         options: DiscordHandlerOptions,
@@ -30,8 +38,12 @@ export class DiscordHandler<Decorators = {}> {
         this.actionLoader = new ActionLoader({
             path: options.handlerPath
         })
+        this.options.registerCommands = options.registerCommands || false
+        this.rest = new REST().setToken(process.env.DISCORD_BOT_TOKEN);
         this.registerActions()
-    };
+
+    }
+
     private eventHandlers: {
         [E in keyof DiscordEventMap]?: Array<
             (ctx: Decorators & EventContext<E>) => void
@@ -154,12 +166,54 @@ export class DiscordHandler<Decorators = {}> {
         actions.forEach((action: any) => {
             if (action.eventType) {
                 this.client.on(action.eventType.toString(), action.run.bind(this, this.client, this))
-                this.commands.set(action.getName(), action)
+                this.events.set(action.getName(), action)
             } else if (action.command) {
-                this.commands.set(action.getName(), action)
+                //this.client.on('interactionCreate', action.run.bind(this, this.client, this))
+                this.commands.set(action.command.name, action)
             }
+
+
         })
+        this.client.on('interactionCreate', async interaction => {
+            if (interaction.isCommand()) {
+                const command = this.commands.get(interaction.commandName);
+                try {
+                    command.run(this.client, interaction);
+                } catch (error) {
+                    console.error("ERROR");
+
+                }
+            }
+        });
+        this.refreshCommands("1209460505706766376")
+
+
     }
+
+    async refreshCommands(guildId: string) {
+        if (this.options.registerCommands === false) {
+            console.log("skipping command registration")
+            return
+        }
+        try {
+            console.log(
+        `Started refreshing ${this.commands.size} application (/) commands.`
+            );
+
+            const commandJson : ApplicationCommandData[]= this.commands.values().map((value, index) => value.command).toArray()
+
+            const data: ApplicationCommand[] = await this.rest.put(
+                Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, guildId),
+                {body: commandJson },
+            ) as ApplicationCommand[];
+
+            console.log(`Successfully reloaded ${data.length} application (/) commands.`);
+        } catch (error) {
+            // And of course, make sure you catch and log any errors!
+            console.error("ERROR", error);
+        }
+    }
+
 
 
     addService(name: string, service: any) {
@@ -180,10 +234,12 @@ export interface ActionHandler {
 }
 
 export interface CommandHandler extends ActionHandler {
-    command: object
+    commandJson?: () =>object
+    command: ApplicationCommandData
+    execute?: (...args: any[]) => void
 }
 
-interface EventHandler extends ActionHandler {
+export interface EventHandler extends ActionHandler {
     eventType: Events
     run: (...args: any[]) => void
 }

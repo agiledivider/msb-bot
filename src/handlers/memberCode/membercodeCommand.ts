@@ -1,4 +1,5 @@
 import {
+    ApplicationCommandData,
     ChatInputCommandInteraction,
     Client,
     GuildMemberRoleManager,
@@ -25,7 +26,7 @@ export class MembercodeCommandHandler implements CommandHandler {
             option.setName('code')
                 .setDescription('the code')
                 .setRequired(true)
-        ).toJSON()
+        ).toJSON() as ApplicationCommandData
 
 
     async run(client: Client, interaction: Interaction): Promise<void> {
@@ -81,6 +82,7 @@ class MembercodeCommand {
         })
         return this
     }
+
 
     validateEnteredCode() : this {
         this.promise = this.promise.then(() => {
@@ -161,4 +163,16 @@ class MembercodeCommand {
     }
 }
 
-export default MembercodeCommandHandler
+export class TestHandler implements CommandHandler {
+
+    command = new SlashCommandBuilder().setName("test").setDescription("test").toJSON() as ApplicationCommandData
+
+    async run(client: Client, interaction: Interaction): Promise<void> {
+        if (!interaction.isChatInputCommand()) return
+        interaction.reply({content: "test"})
+    }
+
+    getName(): string {
+        return "test"
+    }
+}
