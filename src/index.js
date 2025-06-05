@@ -9,21 +9,38 @@ const { TrashService, icsTrashRepository, RealDateService } = require('./Service
 const { DiscordHandler } = require('./DiscordHandler/DiscordHandler')
 import {migrate} from 'drizzle-orm/node-postgres/migrator';
 import * as schema from "./db/schema";
+import pino from 'pino'
+import { drizzle } from 'drizzle-orm/node-postgres';
+import TestTrashRepository from './Services/TestTrashService'
+import { TrashDiscordService } from './Services/trashDiscordService'
+const config = require('../msb.config.json')
 
 async function migrateDB() {
-  console.log("migrating")
-  const db = drizzle(process.env.DATABASE_URL, {schema})
+  logger.info("migrating")
+  const db = await drizzle(process.env.DATABASE_URL, {schema})
   await migrate(db, {
     migrationsFolder: __dirname + "/db/migrations/",
     migrationsTable: "migrations",
     migrationsSchema: "makerspace_bot"
   });
-  console.log("migration done")
+  logger.info("migration done")
 }
 
 
+
+const logger = pino({
+  level: 'trace',
+  transport: {
+    target: 'pino-pretty',
+    options: {
+      colorize: true
+    }
+  }
+})
+
+
 try {
-  //await migrateDB();
+  await migrateDB();
 } catch (e) {
   console.log(e)
 }
@@ -41,45 +58,42 @@ const client = new Client({
 
 
 
-new CommandKit({
-  client,
-  devGuildIds: ['1209460505706766376'],
-  devUserIds: ['529022599469203476'],
-  eventsPath: `${__dirname}/events`,
-  commandsPath: join(__dirname, 'commands'),
-  bulkRegister: true,
-})
-
 const discordHandler = new DiscordHandler({
   client,
-  handlerPath: join(__dirname, '/handlers/')
+  handlerPath: join(__dirname, '/handlers/'),
+  registerCommands: true,
+  logger
 })
 
+import TestTrashService from './Services/TestTrashService'
+
 const realDateService = new RealDateService()
-const trashService = new TrashService(new icsTrashRepository(__dirname + '/muell.ics', realDateService))
+const trashRepository = new icsTrashRepository(__dirname + '/muell.ics', realDateService)
+const trashService = new TrashService(trashRepository, realDateService)
+
+
 
 discordHandler.addService('dateService', realDateService)
 discordHandler.addService('trashService', trashService)
+discordHandler.addService('config', config)
+discordHandler.addService('logger', logger)
 
-import { drizzle } from 'drizzle-orm/node-postgres';
+
 const db = drizzle(process.env.DATABASE_URL);
 
 
-
-// services
-client.services = {
-  trashService,
-  realDateService
-}
-
 client.on('ready', () => {
-  console.log('Ready! ---------------------');
+  logger.info('Client Ready! ---------------------');
+  const trashDiscordService = new TrashDiscordService(client, trashService, logger)
+  logger.debug("discord trash service registered")
+  discordHandler.addService('trashDiscordService', trashDiscordService)
+
   const guilds = client.guilds.cache.map(guild => guild);
   for (const guildInfo of guilds) {
-    console.log(guildInfo.id, guildInfo.name)
-    console.log(guildInfo.members.me.permissions.serialize())
+    // console.log(guildInfo.id, guildInfo.name)
+    // console.log(guildInfo.members.me.permissions.serialize())
   }
-  console.log(`Logged in as ${client.user.tag}!`);
+  logger.info(`Logged in as ${client.user.tag}!`);
 });
 
 client.login(process.env.DISCORD_BOT_TOKEN);
@@ -87,10 +101,10 @@ client.login(process.env.DISCORD_BOT_TOKEN);
 let callAmount = 0;
 process.on('SIGINT', function() {
   if(callAmount < 1) {
-    console.log(`✅ The server has been stopped`, 'Shutdown information', 'This shutdown was initiated by CTRL+C.');
+    logger.info(`✅ The server has been stopped, This shutdown was initiated by CTRL+C.'`);
     setTimeout(() => process.exit(0), 1000);
   } else {
-    console.log(`trying to stop for ${callAmount} times`)
+    logger.info(`trying to stop for ${callAmount} times`)
   }
   callAmount++;
   client.destroy();

@@ -2,7 +2,7 @@ export interface DateService {
     now(): Date
 }
 
-interface TrashRepository {
+export interface TrashRepository {
     getAllTrashDates(): Promise<TrashDate[]>
     getNextTrashDates(): Promise<TrashDate[]>
 }

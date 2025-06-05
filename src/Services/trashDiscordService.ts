@@ -1,6 +1,7 @@
 import { scheduleJob } from "node-schedule";
 import {ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, Interaction, Message} from "discord.js";
-import { TrashDate } from "./TrashService";
+import {TrashDate, TrashService} from "./TrashService";
+import {BaseLogger, Logger} from "pino";
 
 export class TrashDiscordService {
     client: Client
@@ -8,6 +9,7 @@ export class TrashDiscordService {
     guild
     channel
     job
+    logger: Logger
     private actionRequest: any
     actionDone: boolean = false
     currentText: number = 0
@@ -28,9 +30,12 @@ export class TrashDiscordService {
         `Warum drückst Du den Knopf noch selbst, [username]? Du könntest es auch mit einem Servo und einem Pi automatisieren, Du faules Stück.`,
         `Herzlichen Glückwunsch, [username]! Du bist gerade zum Müllbeauftragen des Makerspaces geworden. Jetzt komm vorbei und stell den Müll raus.`
     ]
+    private trashService: TrashService;
 
-    constructor(client : Client) {
+    constructor(client : Client, trashService: TrashService, logger: Logger) {
         this.client = client
+        this.trashService = trashService
+        this.logger = logger.child({}, {msgPrefix: `[${this.constructor.name}] `})
         this.responses
         var msb = {
             channelId: '600337356712575007', // #allgemein
@@ -55,8 +60,8 @@ export class TrashDiscordService {
 
 
     async informAboutTrash() {
-        console.log('trash task ', new Date())
-        var trashDates = await this.client.services.trashService.getNextTrashDates();
+        this.logger.debug('trash task %o', new Date())
+        var trashDates = await this.trashService.getNextTrashDates();
         if (
             trashDates &&
             await this.thereHasBeenNoInfoInTheLastDayOrNumberOfMessages()
@@ -65,14 +70,14 @@ export class TrashDiscordService {
         }
         await this.askForAction(trashDates)
         if (this.actionRequest) {
-            console.log(
+            this.logger.debug("%o, %s, %s",
                 new Date(this.actionRequest.createdTimestamp).getDate() != new Date().getDate(),
                 new Date(this.actionRequest.createdTimestamp).getDate(),
                 new Date().getDate()
             )
         }
         if (this.actionRequest != null && new Date(this.actionRequest.createdTimestamp).getDate() != new Date().getDate()) {
-            console.log("removing old request")
+            this.logger.debug("removing old request")
             if (this.actionRequest.components.length > 0) {
                 this.actionRequest.edit({
                     content: this.actionRequest.content + "\nhat sich wohl niemand gekümmert :(",
@@ -88,7 +93,7 @@ export class TrashDiscordService {
         const trashTomorrow = trashDates.filter(trashDate => trashDate.daysUntil(new Date()) == 1)
         if (trashTomorrow.length > 0 && !this.actionDone) {
             const trashTypes = trashTomorrow.map(t => t.type).join(', ')
-            console.log("Today needs to be done something")
+            this.logger.debug("Today needs to be done something")
             if (this.actionRequest == null) {
                 this.sendRequestForAction(trashTypes)
             } else {
@@ -114,7 +119,7 @@ export class TrashDiscordService {
                 try {
                     await message.delete()
                 } catch (e) {
-                    console.log("delete error", e)
+                    this.logger.error("delete error", e)
                 }
             }
         }
@@ -147,7 +152,7 @@ export class TrashDiscordService {
 
 
     sendTrashInfo (trashDates: TrashDate[]) {
-        console.log('Send trash info')
+        this.logger.debug('Send trash info')
         trashDates.forEach(trashDate => {
             if (trashDate.daysUntil(new Date()) > 3) return
             this.channel.send(`[Müll] Die Abfuhr von **${trashDate.type}** ist am **${trashDate.timeString()}** in ${trashDate.daysUntil(new Date())} Tagen!`)

@@ -1,14 +1,17 @@
 import {ActionHandler, CommandHandler, EventHandler} from "./DiscordHandler";
 import * as fs from "node:fs";
 import * as path from 'path';
+import {BaseLogger} from "pino";
 
 export class ActionLoader {
     private actions: ActionHandler[] = [];
     private path: string;
+    private logger: BaseLogger;
 
 
     constructor(options: ActionLoaderOptions) {
         this.path = options.path
+        this.logger = options.logger
     }
 
 
@@ -26,9 +29,9 @@ export class ActionLoader {
             // Process files in the directory
             this.processDirectory(this.path);
 
-            console.log(`Loaded ${this.actions.length} actions`);
+            this.logger.info(`Loaded ${this.actions.length} actions`);
         } catch (error) {
-            console.error('Error loading actions:', error);
+            this.logger.error('Error loading actions:', error);
             throw error;
         }
         return this.actions
@@ -65,25 +68,24 @@ export class ActionLoader {
             for (const exportName in importedModule) {
                 const exportedItem = importedModule[exportName];
                 if (typeof exportedItem !== 'function') continue;
-
                 try {
                     const instance = new exportedItem();
                     if (this.isActionHandler(instance)) {
                         this.actions.push(instance);
                         if (this.isEventHandler(instance)) {
-                            console.log(`Loaded EventHandler: ${instance.eventType} from ${fileInfo}`);
+                            this.logger.debug(`Loaded EventHandler: ${instance.eventType} from ${fileInfo}`);
                         } else if (this.isCommandHandler(instance)) {
-                            console.log(`Loaded CommandHandler: ${instance.command.name} from ${fileInfo}`);
+                            this.logger.debug(`Loaded CommandHandler: ${instance.command.name} from ${fileInfo}`);
                         } else {
-                            console.log(`Loaded action: ${instance.getName()} from ${fileInfo}`);
+                            this.logger.warn(`Loaded unknown action: %o from ${fileInfo}`, instance);
                         }
                     }
                 } catch (error) {
-                    console.log(error)
+                    this.logger.error(error)
                 }
             }
         } catch (error) {
-            console.warn(`Failed to load actions from ${filePath}:`, error);
+            this.logger.warn(`Failed to load actions from ${filePath}: %o`, error);
         }
     }
 
@@ -118,5 +120,5 @@ export class ActionLoader {
 
 export interface ActionLoaderOptions {
     path: string
-    logger?: Logger
+    logger?: BaseLogger
 }

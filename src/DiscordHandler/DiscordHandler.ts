@@ -1,20 +1,21 @@
 import {
     ApplicationCommand, ApplicationCommandData,
     Client,
-    GuildMember,
+    GuildMember, Interaction, Presence,
     REST,
     Routes,
 } from "discord.js";
 import { Events } from "discord.js";
 import {ActionLoader} from "./ActionLoader";
 import {ContextAppendType, DiscordEventMap, EventContext, Reconcile} from "./types";
+import {BaseLogger} from "pino";
 
 export interface DiscordHandlerOptions {
     client: Client,
     handlerPath: string,
-    registerCommands?: boolean
+    registerCommands?: boolean,
+    logger?: BaseLogger
 }
-
 
 export class DiscordHandler<Decorators = {}> {
     private useHandlers: ((ctx: Decorators) => void)[] = [];
@@ -25,18 +26,21 @@ export class DiscordHandler<Decorators = {}> {
     readonly commands: Map<string, CommandHandler> = new Map();
     readonly events: Map<string, EventHandler> = new Map();
     private rest: REST
+    private logger: BaseLogger;
 
     constructor (
         options: DiscordHandlerOptions,
         private decorators: Decorators = {} as Decorators
     )  {
+        this.logger = options.logger
         this.decorators = decorators
-        console.log("this.decorators", this.decorators)
+        this.logger.debug("this.decorators %o", this.decorators)
         this.services = []
         this.options = options
         this.client = options.client
         this.actionLoader = new ActionLoader({
-            path: options.handlerPath
+            path: options.handlerPath,
+            logger: options.logger
         })
         this.options.registerCommands = options.registerCommands || false
         this.rest = new REST().setToken(process.env.DISCORD_BOT_TOKEN);
@@ -149,8 +153,8 @@ export class DiscordHandler<Decorators = {}> {
     }
 
     executeHandlers() {
-        console.log('🚀 Running app with context:');
-        console.log(this.decorators);
+        this.logger.info('🚀 Running app with context:');
+        this.logger.info(this.decorators);
         for (const handler of this.useHandlers) {
             handler(this.decorators);
         }
@@ -165,7 +169,14 @@ export class DiscordHandler<Decorators = {}> {
         const actions = this.actionLoader.load()
         actions.forEach((action: any) => {
             if (action.eventType) {
-                this.client.on(action.eventType.toString(), action.run.bind(this, this.client, this))
+                if (typeof action.execute === 'function' && action.execute ) {
+                    let args = {}
+                    this.logger.trace("registering event %o on %s", action.eventType.toString(), action.constructor.name)
+                    this.client.on(action.eventType.toString(), (...args) => action.execute(args, {client: this.client, discordHandler: this, ...this.services}))
+                } else {
+                    this.logger.trace("registering event %o on %s", action.eventType.toString(), action.constructor.name)
+                    this.client.on(action.eventType.toString(), action.run.bind(this, this.client, this))
+                }
                 this.events.set(action.getName(), action)
             } else if (action.command) {
                 //this.client.on('interactionCreate', action.run.bind(this, this.client, this))
@@ -178,7 +189,12 @@ export class DiscordHandler<Decorators = {}> {
             if (interaction.isCommand()) {
                 const command = this.commands.get(interaction.commandName);
                 try {
-                    command.run(this.client, interaction);
+                    if (typeof command.execute === 'function' && command.execute ) {
+                        this.logger.debug("executing command %o", command.command.name)
+                        command.execute({interaction, client: this.client, discordHandler: this, ...this.services});
+                    } else {
+                        command.run(this.client, interaction, this);
+                    }
                 } catch (error) {
                     console.error("ERROR");
 
@@ -192,11 +208,11 @@ export class DiscordHandler<Decorators = {}> {
 
     async refreshCommands(guildId: string) {
         if (this.options.registerCommands === false) {
-            console.log("skipping command registration")
+            this.logger.info("skipping command registration")
             return
         }
         try {
-            console.log(
+            this.logger.info(
         `Started refreshing ${this.commands.size} application (/) commands.`
             );
 
@@ -207,10 +223,10 @@ export class DiscordHandler<Decorators = {}> {
                 {body: commandJson },
             ) as ApplicationCommand[];
 
-            console.log(`Successfully reloaded ${data.length} application (/) commands.`);
+            this.logger.info(`Successfully reloaded ${data.length} application (/) commands.`);
         } catch (error) {
             // And of course, make sure you catch and log any errors!
-            console.error("ERROR", error);
+            this.logger.error("ERROR %o", error);
         }
     }
 
@@ -237,26 +253,38 @@ export interface CommandHandler extends ActionHandler {
     commandJson?: () =>object
     command: ApplicationCommandData
     execute?: (...args: any[]) => void
+    run?: (...args: any[]) => void
 }
 
 export interface EventHandler extends ActionHandler {
     eventType: Events
-    run: (...args: any[]) => void
+    run?: (...args: any[]) => void
+    execute?: (...args: any[]) => void
 }
 
 export interface ClientReadyHandler extends EventHandler {
     eventType: Events
-    run: (client: Client, handler: DiscordHandler) => void
+    run?: (client: Client, handler: DiscordHandler) => void
 }
 
 export interface GuildMemberAddHandler extends EventHandler {
     eventType: Events
-    run: (client: Client, handler: DiscordHandler, newMember: GuildMember) => void
+    run?: (client: Client, handler: DiscordHandler, newMember: GuildMember) => void
 }
 
 export interface GuildMemberUpdateHandler extends EventHandler {
-    eventType: Events
-    run: (client: Client, handler: DiscordHandler, oldMember: GuildMember, newMember: GuildMember) => void
+    eventType: Events.GuildMemberUpdate
+    run?: (client: Client, handler: DiscordHandler, oldMember: GuildMember, newMember: GuildMember) => void
+}
+
+export interface PresenceUpdateHandler extends EventHandler {
+    eventType: Events.PresenceUpdate
+    run?: (client: Client, handler: DiscordHandler, oldPresence: Presence, newPresence: Presence) => void
+}
+
+export interface InteractionCreateHandler extends EventHandler {
+    eventType: Events.InteractionCreate
+    run?: (client: Client, handler: DiscordHandler, interaction: Interaction) => void
 }
 
 
