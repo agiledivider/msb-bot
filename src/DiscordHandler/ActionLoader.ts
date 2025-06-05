@@ -98,7 +98,7 @@ export class ActionLoader {
     private isActionHandler(obj: any): obj is ActionHandler {
         return (
             obj &&
-            typeof obj.run === 'function' &&
+            (typeof obj.run === 'function' || typeof obj.execute === 'function') &&
             typeof obj.getName === 'function'
         );
     }
