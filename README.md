@@ -24,3 +24,9 @@ Upload the Docker Image to Docker Hub
 docker push falkkuehnel/msb-bot:latest 
 ```
 
+
+Wenn man nicht die Standard DB bei Postgrest mit drizzle nutzt, dann braucht man folgendes:
+```postgresql
+ALTER DATABASE my_database OWNER TO my_database_user;
+```
+
