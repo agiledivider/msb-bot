@@ -14,8 +14,10 @@ export interface DiscordHandlerOptions {
     client: Client,
     handlerPath: string,
     registerCommands?: boolean,
+    config?: object,
     logger?: BaseLogger
 }
+
 
 export class DiscordHandler<Decorators = {}> {
     private useHandlers: ((ctx: Decorators) => void)[] = [];
@@ -27,6 +29,7 @@ export class DiscordHandler<Decorators = {}> {
     readonly events: Map<string, EventHandler> = new Map();
     private rest: REST
     private logger: BaseLogger;
+    private config: object;
 
     constructor (
         options: DiscordHandlerOptions,
@@ -44,6 +47,7 @@ export class DiscordHandler<Decorators = {}> {
         })
         this.options.registerCommands = options.registerCommands || false
         this.rest = new REST().setToken(process.env.DISCORD_BOT_TOKEN);
+        this.config = options.config
         this.registerActions()
 
     }
@@ -201,7 +205,7 @@ export class DiscordHandler<Decorators = {}> {
                 }
             }
         });
-        this.refreshCommands("1209460505706766376")
+        this.refreshCommands(this.config.guildId)
 
 
     }
@@ -213,7 +217,7 @@ export class DiscordHandler<Decorators = {}> {
         }
         try {
             this.logger.info(
-        `Started refreshing ${this.commands.size} application (/) commands.`
+        `Started refreshing ${this.commands.size} application (/) commands for guild ${guildId}.`,
             );
 
             const commandJson : ApplicationCommandData[]= this.commands.values().map((value, index) => value.command).toArray()

@@ -68,6 +68,7 @@ const discordHandler = new DiscordHandler({
   client,
   handlerPath: join(__dirname, '/handlers/'),
   registerCommands: true,
+  config,
   logger
 })
 
