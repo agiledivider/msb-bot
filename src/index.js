@@ -3,7 +3,6 @@ import { ChannelFlagsBitField } from 'discord.js'
 
 require('dotenv').config()
 const { Client, GatewayIntentBits } = require('discord.js');
-const { CommandKit } = require('commandkit');
 const { join } = require('path')
 const { TrashService, icsTrashRepository, RealDateService } = require('./Services/TrashService')
 const { DiscordHandler } = require('./DiscordHandler/DiscordHandler')
@@ -11,9 +10,18 @@ import {migrate} from 'drizzle-orm/node-postgres/migrator';
 import * as schema from "./db/schema";
 import pino from 'pino'
 import { drizzle } from 'drizzle-orm/node-postgres';
-import TestTrashRepository from './Services/TestTrashService'
 import { TrashDiscordService } from './Services/trashDiscordService'
 const config = require('../msb.config.json')
+
+// migrate DB
+// initialize services
+// - logger
+// - trashService
+// - trashDiscordService
+// - discordHandler
+// initialize client
+// start client
+
 
 async function migrateDB() {
   logger.info("migrating")
@@ -65,21 +73,15 @@ const discordHandler = new DiscordHandler({
   logger
 })
 
-import TestTrashService from './Services/TestTrashService'
 
 const realDateService = new RealDateService()
 const trashRepository = new icsTrashRepository(__dirname + '/muell.ics', realDateService)
 const trashService = new TrashService(trashRepository, realDateService)
 
-
-
 discordHandler.addService('dateService', realDateService)
 discordHandler.addService('trashService', trashService)
 discordHandler.addService('config', config)
 discordHandler.addService('logger', logger)
-
-
-const db = drizzle(process.env.DATABASE_URL);
 
 
 client.on('ready', () => {
