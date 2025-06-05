@@ -1,5 +1,5 @@
 import {
-    ApplicationCommandData,
+    ApplicationCommandData, AttachmentBuilder,
     Client,
     Interaction,
     MessageFlags,
@@ -9,6 +9,7 @@ import {CommandHandler} from "../../DiscordHandler/DiscordHandler";
 import {drizzle} from "drizzle-orm/node-postgres";
 import * as schema from "../../db/schema";
 import {eq, and, isNull} from "drizzle-orm";
+import {CodePdf} from "./CodePdf";
 
 /* TODO
     - add a check if the user is allowed to use this command
@@ -50,6 +51,7 @@ export class GenerateCodesCommandHandler implements CommandHandler {
         const amount = interaction.options.getInteger('amount')
         const db = drizzle(process.env.DATABASE_URL, {schema, logger: true});
         const codes = []
+        let from,to
         for (let i = 0; i < amount; i++) {
             const memberCode = await db.insert(schema.memberCodesTable).values({
                 code: this.generateVoucherCode(),
@@ -57,10 +59,20 @@ export class GenerateCodesCommandHandler implements CommandHandler {
             }).returning()
             console.log(memberCode)
             codes.push(memberCode[0].code + '-' +memberCode[0].id)
+            if (i == 0) from = memberCode[0].id
+            if (i == amount-1) to = memberCode[0].id
         }
 
         const codeList = codes.join("\n")
-        interaction.editReply({content: `Ich habe folgende Codes generiert: \n\n${codeList}`});
+
+        const doc = new CodePdf(codes)
+        const attachment = new AttachmentBuilder(await doc.getPdfBuffer(), { name: `MSB-membercodes-${from}-${to}.pdf` });
+
+        await interaction.editReply({
+            content: 'Here are the codes and a PDF:\n'+codeList,
+            files: [attachment]
+        });
+
     }
 
     async run(client: Client, interaction: Interaction): Promise<void> {
