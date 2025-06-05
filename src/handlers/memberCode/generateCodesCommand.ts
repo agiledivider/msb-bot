@@ -39,7 +39,10 @@ export class GenerateCodesCommandHandler implements CommandHandler {
     async execute({ interaction, config }) {
         if (!interaction.isChatInputCommand()) return
         await interaction.deferReply({ flags: MessageFlags.Ephemeral })
-        if (!config.membercodes.allowedUsers.includes(interaction.user.id)) {
+        if (
+            !config.membercodes.allowedUsers.includes(interaction.user.id) &&
+            !interaction.member.roles.cache.has(config.membercodes.allowedRole)
+        ) {
             interaction.editReply({content: "You are not allowed to use this command"});
             return
         }
