@@ -1,7 +1,3 @@
-// Require the necessary discord.js classes
-import { ChannelFlagsBitField } from 'discord.js'
-
-require('dotenv').config()
 const { Client, GatewayIntentBits } = require('discord.js');
 const { join } = require('path')
 const { TrashService, icsTrashRepository, RealDateService } = require('./Services/TrashService')
@@ -13,6 +9,8 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { TrashDiscordService } from './Services/trashDiscordService'
 const config = require('../msb.config.json')
 
+// check environment variables
+// check config
 // migrate DB
 // initialize services
 // - logger
