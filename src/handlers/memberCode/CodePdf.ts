@@ -1,6 +1,7 @@
-import PDFDocument from 'pdfkit'
+import PDFDocument = require('pdfkit');
 
 export class CodePdf {
+    // @ts-ignore
     doc: PDFDocument
     private codes: string[];
     constructor(codes: string[]) {
@@ -12,6 +13,7 @@ export class CodePdf {
     toPoints(mm:number): number {
         return mm / 25.4 * 72;
     }
+
 
     renderCodeParts(code: string, y: number): void {
         this.doc.image(__dirname + '/images/makerspace-discord-qr-code.png', this.toPoints(5), y + this.toPoints(1), { height: this.toPoints(48) });

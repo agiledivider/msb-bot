@@ -8,8 +8,7 @@ import {
 import {CommandHandler} from "../../DiscordHandler/DiscordHandler";
 import {drizzle} from "drizzle-orm/node-postgres";
 import * as schema from "../../db/schema";
-import {eq, and, isNull} from "drizzle-orm";
-import {CodePdf} from "./CodePdf";
+import {CodePdf} from "./codePdf";
 
 /* TODO
     - add a check if the user is allowed to use this command
