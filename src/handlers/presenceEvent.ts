@@ -8,7 +8,7 @@ class DummyPresenceUpdateHandler implements PresenceUpdateHandler {
     }
 
     execute([oldPresence, newPresence], { logger }) {
-        logger.trace('presence updated: %s %s -> %s', oldPresence.member.displayName, oldPresence.status, newPresence.status)
+        logger.trace('presence updated: %s %s -> %s', oldPresence.member?.displayName, oldPresence.status, newPresence.status)
     }
     getName(): string {
         return "some test ready handler"
