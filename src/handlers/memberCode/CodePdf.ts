@@ -1,4 +1,4 @@
-import PDFDocument = require('pdfkit');
+import PDFDocument from "pdfkit";
 
 export class CodePdf {
     // @ts-ignore
@@ -16,32 +16,32 @@ export class CodePdf {
 
 
     renderCodeParts(code: string, y: number): void {
-        this.doc.image(__dirname + '/images/makerspace-discord-qr-code.png', this.toPoints(5), y + this.toPoints(1), { height: this.toPoints(48) });
+        const xStart = this.toPoints(20)
+        this.doc.image(__dirname + '/images/makerspace-discord-qr-code.png', this.toPoints(5) + xStart, y + this.toPoints(1), { height: this.toPoints(48) });
         this.doc.strokeColor('#cecece')
-            .rect(this.toPoints(0),y, this.toPoints(210), this.toPoints(50))
+            .rect(xStart,y, this.toPoints(170), this.toPoints(50))
             .stroke();
         this.doc
             .font('Helvetica-Bold')
             .fontSize(30)
             .fillColor('#cecece')
-            .text('makerspacebonn.de', this.toPoints(60), y + this.toPoints(3));
+            .text('makerspacebonn.de', this.toPoints(60) +xStart, y + this.toPoints(2));
         this.doc
             .font('SourceCodePro')
             .fillColor('black')
             .fontSize(45)
-            .text(code, this.toPoints(59), y + this.toPoints(14));
+            .text(code, this.toPoints(59) + xStart, y + this.toPoints(12));
         this.doc
             .font('SourceCodePro')
             .fontSize(10)
             .fillColor('black')
-            .text('Einfach im Kanal #public /membercode eingeben und dann den Code. Danach solltest Du den Mitgliederbereich sehen.', this.toPoints(60), y + this.toPoints(38), { align: 'left', width: this.toPoints(150) });
+            .text('Einfach im Kanal #public /membercode eingeben und dann den Code. Danach solltest Du den Mitgliederbereich sehen.', this.toPoints(60) + xStart, y + this.toPoints(34), { align: 'left', width: this.toPoints(100) });
     }
 
     async getPdfBuffer(): Promise<Buffer> {
-        //doc.fontSize(25).text('Hello from PDFKit!', 100, 100);
-        //doc.fontSize(14).text('This PDF was generated and sent from a Discord bot.', 100, 150);
-        const chunks = [];
-        this.doc.on('data', (chunk) => chunks.push(chunk));
+
+        const chunks: Buffer[] = [];
+        this.doc.on('data', (chunk: Buffer) => chunks.push(chunk));
 
         this.codes.forEach((code, index) => {
             if (index > 0 && index % 5 === 0) {
