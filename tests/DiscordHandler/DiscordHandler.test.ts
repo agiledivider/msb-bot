@@ -1,6 +1,12 @@
 import {describe, expect, test, beforeEach, mock} from "bun:test";
 import {DiscordHandler} from "../../src/DiscordHandler/DiscordHandler";
 import {Client} from "discord.js";
+import pino from "pino";
+
+const logger = pino({
+    level: 'silent'
+})
+
 
 describe("Discord Handler - Services", () => {
 
@@ -14,7 +20,8 @@ describe("Discord Handler - Services", () => {
         }
         const discordHandler = new DiscordHandler({
             handlerPath: "",
-            client: new Client ({intents: [] })
+            client: new Client ({intents: [] }),
+            logger
         })
         discordHandler.addService('testService', testService)
 
@@ -27,7 +34,8 @@ describe("Discord Handler - Events", () => {
     test("is event", async () => {
         const discordHandler = new DiscordHandler({
             handlerPath: "",
-            client: new Client ({intents: [] })
+            client: new Client ({intents: [] }),
+            logger
         })
         expect(discordHandler.isEvent('ready')).toBeTrue()
     })
@@ -35,7 +43,8 @@ describe("Discord Handler - Events", () => {
     test("is not event", async () => {
         const discordHandler = new DiscordHandler({
             handlerPath: "",
-            client: new Client ({intents: [] })
+            client: new Client ({intents: [] }),
+            logger
         })
         expect(discordHandler.isEvent('someRandomNotExistingEventName')).toBeFalse()
     })
@@ -50,7 +59,8 @@ describe("Discord Handler - Events with context", () => {
     test("test context", async () => {
         let discordHandler = new DiscordHandler({
             handlerPath: "",
-            client: new Client ({intents: [] })
+            client: new Client ({intents: [] }),
+            logger
         })
 
         //discordHandler.decorate('version', '1.0')

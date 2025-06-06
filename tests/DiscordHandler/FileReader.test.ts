@@ -1,14 +1,19 @@
 import {beforeEach, describe, expect, mock, test} from "bun:test";
 import {DiscordHandler} from "../../src/DiscordHandler/DiscordHandler";
 import {Client} from "discord.js";
+import pino from "pino";
 
+const logger = pino({
+    level: 'silent'
+})
 
 async function initTestHandler(testDirectory: string) {
     const testService = mock(() => {})
     const client = new Client ({ intents: [] })
     const discordHandler = new DiscordHandler({
         handlerPath: __dirname + "/../testData/" + testDirectory,
-        client
+        client,
+        logger
     })
     discordHandler.addService("testService", testService)
     return {testService, client, discordHandler}

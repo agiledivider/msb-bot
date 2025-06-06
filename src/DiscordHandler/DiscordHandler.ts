@@ -205,16 +205,17 @@ export class DiscordHandler<Decorators = {}> {
                 }
             }
         });
-        this.refreshCommands(this.config.guildId)
+        this.refreshCommands()
 
 
     }
 
-    async refreshCommands(guildId: string) {
+    async refreshCommands() {
         if (this.options.registerCommands === false) {
             this.logger.info("skipping command registration")
             return
         }
+        const guildId = this.config.guildId;
         try {
             this.logger.info(
         `Started refreshing ${this.commands.size} application (/) commands for guild ${guildId}.`,
