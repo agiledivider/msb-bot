@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits } = require('discord.js');
+const { Client, GatewayIntentBits, Partials } = require('discord.js');
 const { join } = require('path')
 const { TrashService, icsTrashRepository, RealDateService } = require('./Services/TrashService')
 const { DiscordHandler } = require('./DiscordHandler/DiscordHandler')
@@ -59,7 +59,10 @@ const client = new Client({
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildPresences,
-  ]
+    GatewayIntentBits.DirectMessages,
+
+  ],
+  'partials': [Partials.Channel]
 });
 
 
