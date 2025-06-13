@@ -1,5 +1,5 @@
 import { scheduleJob } from "node-schedule";
-import {ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, Interaction, Message} from "discord.js";
+import {ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, Interaction, Message, MessageFlags} from "discord.js";
 import {TrashDate, TrashService} from "./TrashService";
 import {BaseLogger, Logger} from "pino";
 
@@ -211,7 +211,10 @@ export class TrashDiscordService {
                 ]
                 const response = responses[this.currentText]
                 this.currentText = (this.currentText + 1) % responses.length
-                await interaction.reply(response)
+                await interaction.reply({
+                    content: response,
+                    flags: MessageFlags.Ephemeral
+                })
             }
         } catch (e) {
 
