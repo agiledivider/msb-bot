@@ -3,7 +3,7 @@ import {
     ChatInputCommandInteraction,
     Client,
     GuildMemberRoleManager,
-    Interaction,
+    Interaction, InteractionContextType,
     MessageFlags,
     SlashCommandBuilder
 } from "discord.js";
@@ -22,6 +22,9 @@ export class MembercodeCommandHandler implements CommandHandler {
         .setDescriptionLocalizations({
             "de": "Gib Deinen Mitgliedscode ein und erhalte sofort Zugriff auf den internen Bereich"
         })
+        .setContexts([
+            InteractionContextType.Guild
+        ])
         .addStringOption(option =>
             option.setName('code')
                 .setDescription('the code')

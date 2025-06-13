@@ -2,6 +2,7 @@ import {
     ApplicationCommandData, AttachmentBuilder,
     Client,
     Interaction,
+    InteractionContextType,
     MessageFlags,
     SlashCommandBuilder
 } from "discord.js";
@@ -23,6 +24,9 @@ export class GenerateCodesCommandHandler implements CommandHandler {
         .setDescriptionLocalizations({
             "de": "neue Mitgliedscodes generieren"
         })
+        .setContexts([
+            InteractionContextType.Guild
+        ])
         .addIntegerOption(option =>
 
             option.setName("amount")

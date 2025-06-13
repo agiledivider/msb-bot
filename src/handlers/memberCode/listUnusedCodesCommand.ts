@@ -1,7 +1,7 @@
 import {
     ApplicationCommandData,
     Client,
-    Interaction,
+    Interaction, InteractionContextType,
     MessageFlags,
     SlashCommandBuilder
 } from "discord.js";
@@ -18,10 +18,20 @@ export class ListUnusedCodesCommandHandler implements CommandHandler {
         .setDescriptionLocalizations({
             "de": "Zeigt die unbenutzten Codes an"
         })
+        .setContexts([
+            InteractionContextType.Guild
+        ])
         .toJSON() as ApplicationCommandData
 
-    async execute({ interaction, config }) {
+    async execute({ interaction, config, logger }) {
         if (!interaction.isChatInputCommand()) return
+        if (interaction.context !== InteractionContextType.Guild) {
+            interaction.reply({content: "This command can only be used in a guild"});
+            return
+        }
+        if (!config.membercodes && !config.membercodes.allowedRole) {
+             interaction
+        }
         await interaction.deferReply({ flags: MessageFlags.Ephemeral })
         if (
             !config.membercodes?.allowedUsers.includes(interaction.user.id) &&
@@ -30,7 +40,6 @@ export class ListUnusedCodesCommandHandler implements CommandHandler {
             interaction.editReply({content: "You are not allowed to use this command"});
             return
         }
-
 
         const db = drizzle(process.env.DATABASE_URL, {schema, logger: true});
         const unusedCodes = await db.query.memberCodesTable.findMany({where: (codes) =>
