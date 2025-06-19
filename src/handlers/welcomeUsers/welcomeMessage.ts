@@ -31,7 +31,7 @@ export default class WelcomeMessage implements GuildMemberAddHandler{
             const message = welcomeMessages[Math.floor(Math.random() * welcomeMessages.length)].replace(/\[user]/g, `<@${newMember.id}>`);
 
             newMember.send({
-                content: `Hallo ${newMember.displayName}! \n\nFalls Du schon Mitglied bist und einen Code im Makerspace mitgenommen hast, kannst Du Dich im Kanal <#763379471533211708> mit dem Command "/membercode <code>" für den Mitgliederbereich freischalten.`
+                content: `Hallo ${newMember.displayName}! \n\nFalls Du schon Mitglied bist und einen Code im Makerspace mitgenommen hast, kannst Du Dich im Kanal <#763379471533211708> mit dem Command \`/membercode <code>\` für den Mitgliederbereich freischalten.`
             })
 
             this.channel.send({
