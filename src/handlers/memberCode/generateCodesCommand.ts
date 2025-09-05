@@ -1,5 +1,6 @@
 import {
     ApplicationCommandData, AttachmentBuilder,
+    ChannelType,
     Client,
     Interaction,
     InteractionContextType,
@@ -40,12 +41,14 @@ export class GenerateCodesCommandHandler implements CommandHandler {
         )
         .toJSON() as ApplicationCommandData
 
-    async execute({ interaction, config }) {
+    async execute({ interaction, config, logger }) {
+        logger.debug('called generateCodes')
         if (!interaction.isChatInputCommand()) return
         await interaction.deferReply({ flags: MessageFlags.Ephemeral })
         if (
-            !config.membercodes.allowedUsers.includes(interaction.user.id) &&
-            !interaction.member.roles.cache.has(config.membercodes.allowedRole)
+            interaction.channel.type === ChannelType.DM ||
+            (!config.membercodes.allowedUsers.includes(interaction.user.id) &&
+            !interaction.member.roles.cache.has(config.membercodes.allowedRole))
         ) {
             interaction.editReply({content: "You are not allowed to use this command"});
             return
