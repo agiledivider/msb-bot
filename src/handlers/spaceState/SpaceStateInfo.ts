@@ -1,7 +1,8 @@
 import {ClientReadyEvent} from "../../DiscordHandler/eventTypes";
-import {Events, TextChannel} from "discord.js";
+import {Client, Events, TextChannel} from "discord.js";
 import mqtt, {MqttClient} from "mqtt";
 import {Logger} from "pino";
+import {Config} from "../../DiscordHandler/DiscordHandler";
 
 type State = {
     open: boolean,
@@ -13,9 +14,13 @@ class SpaceStateInfoHandler implements ClientReadyEvent {
     spaceStateInfo: SpaceStateInfoProcessor
 
     execute([], {logger, client, config}) {
-        logger.debug('spaceStateInfo %o', config)
+        logger.debug('spaceStateInfo execute called')
+        logger.debug('spaceStateInfo %s', config)
         if (!this.spaceStateInfo) {
-            const guild = client.guilds.cache.get(config.spaceStateInfo.guildId);
+            //const guild = client.guilds.cache.get(config.spaceStateInfo.guildId);
+            logger.debug('spaceStateInfo channelId %s', config?.spaceStateInfo?.channelId)
+            //if (!guild) {
+            //    logger.error('guild not found')
             const channel = client.channels.cache.get(config.spaceStateInfo.channelId);
             if (!channel || !(channel instanceof TextChannel)) {
                 logger.error('channel not found %o', channel)

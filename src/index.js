@@ -1,12 +1,17 @@
+import spaceStateInfo from './handlers/spaceState/SpaceStateInfo'
+
 const { Client, GatewayIntentBits, Partials } = require('discord.js');
 const { join } = require('path')
 const { TrashService, icsTrashRepository, RealDateService } = require('./Services/TrashService')
-const { DiscordHandler } = require('./DiscordHandler/DiscordHandler')
+const { DiscordHandler, Config } = require('./DiscordHandler/DiscordHandler')
 import {migrate} from 'drizzle-orm/node-postgres/migrator';
 import * as schema from "./db/schema";
 import pino from 'pino'
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { TrashDiscordService } from './Services/trashDiscordService'
+
+import { SpaceStateService } from './handlers/spaceState/services/spaceStateService'
+
 const config = require('../msb.config.json')
 
 // check environment variables
@@ -46,7 +51,7 @@ const logger = pino({
 
 
 try {
-  await migrateDB();
+  //await migrateDB();
 } catch (e) {
   console.log(e)
 }
@@ -80,13 +85,17 @@ const realDateService = new RealDateService()
 const trashRepository = new icsTrashRepository(__dirname + '/muell.ics', realDateService)
 const trashService = new TrashService(trashRepository, realDateService)
 
+//discordHandler.decorate(config);
+
 discordHandler.addService('dateService', realDateService)
 discordHandler.addService('trashService', trashService)
 discordHandler.addService('config', config)
 discordHandler.addService('logger', logger)
+discordHandler.addService('spaceStateService', new SpaceStateService())
 
 
 client.on('ready', () => {
+  console.log('client ready')
   logger.info('Client Ready! ---------------------');
   const trashDiscordService = new TrashDiscordService(client, trashService, logger)
   logger.debug("discord trash service registered")
