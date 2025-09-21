@@ -22,6 +22,20 @@
       "when": 1748951698834,
       "tag": "0002_wandering_domino",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1753116765502,
+      "tag": "0003_shiny_kat_farrell",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1753118228791,
+      "tag": "0004_absent_franklin_storm",
+      "breakpoints": true
     }
   ]
 }
