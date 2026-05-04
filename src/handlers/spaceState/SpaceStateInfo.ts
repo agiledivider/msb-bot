@@ -1,5 +1,5 @@
 import { ClientReadyEvent } from "../../DiscordHandler/eventTypes";
-import { Client, Events, TextChannel } from "discord.js";
+import { Events, TextChannel } from "discord.js";
 import mqtt, { MqttClient } from "mqtt";
 import { Logger } from "pino";
 import { Config } from "../../DiscordHandler/DiscordHandler";
@@ -35,7 +35,6 @@ class SpaceStateInfoHandler implements ClientReadyEvent {
         channel,
         logger,
         config,
-        client,
       );
     }
   }
@@ -54,16 +53,14 @@ class SpaceStateInfoProcessor {
   private statechanges = [];
   private logger: Logger;
   private config: any;
-  private client: Client;
 
-  constructor(channel: TextChannel, logger: Logger, config, client: Client) {
+  constructor(channel: TextChannel, logger: Logger, config) {
     this.config = config;
     this.logger = logger.child(
       {},
       { msgPrefix: `[${this.constructor.name}] ` },
     );
     this.channel = channel;
-    this.client = client;
     const mqtturl = process.env.MQTT_URL || "mqtt://status.makerspacebonn.de";
     this.logger.info("connecting MQTT URL: %s", mqtturl);
     this.mqttClient = mqtt.connect(mqtturl, {
@@ -104,7 +101,6 @@ class SpaceStateInfoProcessor {
       }
 
       this.checkChangeAbuse();
-      this.cleanPreviousStateMessages();
     });
 
     mqttClient.on("connect", () => {
@@ -125,29 +121,6 @@ class SpaceStateInfoProcessor {
     mqttClient.on("reconnect", () => {
       this.logger.info("mqtt connection reconnected");
     });
-  }
-
-  async cleanPreviousStateMessages() {
-    this.logger.debug("Cleaning previous state messages");
-    const messages = await this.channel.messages.fetch({ limit: 100 });
-    this.logger.debug(messages.at(0)?.createdTimestamp);
-    this.logger.debug(Date.now());
-    const stateMessages = messages.filter(
-      (msg) =>
-        msg.author.id === this.client.user.id &&
-        msg.content.includes("Der Makerspace ist") &&
-        msg.createdTimestamp < Date.now() - 5000,
-    );
-
-    this.logger.debug("Found %d state messages", stateMessages.size);
-    for (const [id, message] of stateMessages) {
-      try {
-        //this.logger.debug(message);
-        await message.delete();
-      } catch (error) {
-        console.warn(`Nachricht ${id} konnte nicht gelöscht werden:`, error);
-      }
-    }
   }
 
   checkChangeAbuse() {
