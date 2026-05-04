@@ -20,13 +20,14 @@ The following commits have landed on `main` and address parts of this backlog:
 - `c631970` fix(DiscordHandler): default to silent pino logger; fix services map type (resolves #1, #2)
 - `d41f53d` chore: remove projects feature (command, service, schema, test) — fixes the only previously-failing test
 - `ed19205` fix(DiscordHandler): type config from registry; replace Iterator Helpers (resolves #4)
+- `d4a3ed7` refactor(spaceState): migrate SpaceStateInfo to defineEventHandler (first handler converted under #3)
 
 What's now in place:
 - An augmentable `Services` and `Config` type registry (`src/Services/registry.ts`).
 - A `defineEventHandler` helper that gives handlers a `Pick<Services, K>`-typed ctx based on a declared `needs` array.
 - `DiscordHandler.start()` verifies all typed handlers' service needs are met and validates the merged Zod config schema, logging a structured error via `this.logger.error` and throwing on failure.
 - `index.js` wraps `start()` in a try/catch that calls `process.exit(1)` so the bot will not connect to Discord on a misconfiguration.
-- One real handler (`SpaceStateInfo.poc.ts`) and one real service (`TrashService.ts`) demonstrate cross-file augmentation.
+- `SpaceStateInfo.ts` uses the typed pattern with cross-file augmentation; the POC file has been retired.
 - Tests in `tests/DiscordHandler/DiscordHandler-Typed.test.ts` and `tests/Services/registry.test.ts` cover the new paths end-to-end.
 
 ---
@@ -64,9 +65,10 @@ These items existed in the original review but no longer fit the codebase. The f
 - Field is now `private services: Record<string, unknown> = {}`; constructor's `this.services = []` line removed. Semantics unchanged.
 
 ### [ ] 3. Migrate legacy handlers to the typed-ctx pattern (was: untyped execute-context contract)
-- **Files:** legacy handlers in `src/handlers/` that still destructure an untyped ctx, e.g. `spaceState/SpaceStateInfo.ts:16`, `memberCode/generateCodesCommand.ts`, `trashInfos/regularTrashInfos.ts:11`, `welcomeUsers/*`, `welcomeMember/*`, `presenceEvent.ts`.
-- **Status:** the *pattern* is implemented (`defineEventHandler` + `requiredServices` + `Pick<Services, K>` ctx). The *migration* of existing handlers is the remaining work. Each file gets converted to `defineEventHandler({...})` plus its own `declare module` augmentation for any config slice it reads, then delete its untyped class body.
+- **Status:** in progress. `SpaceStateInfo.ts` migrated in `d4a3ed7`. Remaining handlers still on the untyped pattern: `memberCode/generateCodesCommand.ts`, `memberCode/listUnusedCodesCommand.ts`, `memberCode/membercodeCommand.ts`, `trashInfos/regularTrashInfos.ts`, `trashInfos/nextTrashDatesCommand.ts`, `trashInfos/reactOnButtonClickInteractionCreateHandler.ts`, `welcomeUsers/welcomeMessage.ts`, `welcomeMember/welcomeInfos.ts`, `presenceEvent.ts`, `readyHandler.ts`, `spaceState/changeSpaceState.ts`. Plus the untracked `askForInfos.ts`.
+- **Per-handler steps:** convert to `defineEventHandler` (or `defineCommandHandler` once we add it) with explicit `needs`, declare any config slice this handler reads via `registerConfigSlice` + `z.infer`, drop the untyped class body. Tighten any internal classes/services it constructs to take only what they actually need (see `d4a3ed7`'s `SpaceStateInfoProcessor` example).
 - **Sequencing:** safe to do one handler per PR. The framework supports both old and new shapes simultaneously, so there is no flag-day.
+- **Note:** the framework currently only supports `defineEventHandler`. Commands still use the legacy class shape. A `defineCommandHandler` helper needs to be added before the command handlers (`memberCode/*`, `nextTrashDatesCommand`, etc.) can be migrated.
 
 ### [x] 4. `refreshCommands` will crash on older runtimes; `config.guildId` is unsafe — DONE in `ed19205`
 - Iterator Helpers replaced with `Array.from(this.commands.values()).map(v => v.command)`. `this.config` typed as `Config | undefined` from the registry. Framework's own `guildId` slice registered via `registerConfigSlice` so it's validated alongside handler slices at `start()`. -5 type errors.
@@ -76,7 +78,6 @@ These items existed in the original review but no longer fit the codebase. The f
 - **Problem:** `registerActions` calls `client.on(eventType, …)` for every loaded event handler with no deduplication. Two `Events.ClientReady` handlers register two independent listeners on the same client. Note that the new typed-handler path uses the *same* `client.on(...)` call site, so this issue affects both paths. Additionally, `this.events.set(action.getName(), action)` keys the registry by `getName()` (not by event type), so two handlers that share a name silently overwrite — but both listeners are still live on the Discord client.
 - **Fix:** Track event-type registrations explicitly. Warn (or error) on duplicate `getName()` for events and commands. Same defensive treatment in `commands.set` (`:225`).
 - **Test:** Load a directory with two handlers sharing `getName()`; assert one is loaded and the other rejected with a clear log.
-- **Note (POC interaction):** the POC handler `SpaceStateInfo.poc.ts` and the original `SpaceStateInfo.ts` both register on `Events.ClientReady` today. That's deliberate during POC validation but is exactly the duplication this item describes. Once #3 migration is done, only one will remain.
 
 ---
 
@@ -96,6 +97,13 @@ These items existed in the original review but no longer fit the codebase. The f
 - **Problem:** `TrashDiscordService` chooses between `config.trashInfo` (loaded from `msb.config.json`) and a hardcoded inline `msb` object based on `this.client?.user?.id == '1319391085641994280'`. Production config lives in code instead of `msb.prod.config.json`, the choice happens at runtime based on bot identity rather than environment, and the prod path bypasses the new Zod-driven config validation introduced via `registerConfigSlice` (since the inline object isn't passed through `validateConfig`).
 - **Fix:** Pick which config file to load once at startup (e.g. via `NODE_ENV` or an explicit env var) so `index.js` ends up holding a single config object. Delete the inline `msb` block. The `TrashDiscordService` constructor then just reads `config.trashInfo` unconditionally. Once this is gone, every config path runs through `validateConfig` at `start()`.
 - **Depends on:** runtime config validation — already landed in `34a4977`.
+
+### [ ] 16. `SpaceStateInfoProcessor` instantiates the MQTT client directly
+- **File:** `src/handlers/spaceState/SpaceStateInfo.ts` (`SpaceStateInfoProcessor` constructor)
+- **Problem:** the processor calls `mqtt.connect(...)` itself, reads `process.env.MQTT_URL`/`MQTT_USER`/`MQTT_PASSWORD` directly, and owns the lifecycle of the MQTT connection. That hides a hard dependency: the processor cannot be exercised without a live broker, can't be mocked for tests, and concentrates connection-management logic inside a feature handler instead of a reusable service. Same shape will recur for any future handler that wants MQTT.
+- **Fix:** introduce an `MqttService` (e.g. `src/Services/mqttService.ts`) that owns the connection, exposes a small surface (`subscribe(topic, handler)`, maybe `publish(topic, payload)` later), and is registered in the `Services` registry by augmenting from its own file. `index.js` constructs and `addService("mqttService", ...)` it the same way `trashService` is wired today. `SpaceStateInfoProcessor` then takes an `MqttService` (or the handler subscribes via `ctx.mqttService.subscribe(topic, ...)` and the processor never sees mqtt directly). Env-var reading moves out of the processor and into the service constructor or — better — into the env-var schema from #12.
+- **Test:** with the service in place, the processor (or the handler) can be tested with a fake `MqttService` that synthesises messages, verifying state-change handling and `checkChangeAbuse` without a real broker.
+- **Note:** mirrors the dependency-injection pattern the rest of the framework now uses. Doing this also makes #14's prod-config story land cleaner since `MqttService` would read its config slice through `registerConfigSlice` like everyone else.
 
 ---
 
