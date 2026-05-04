@@ -10,7 +10,7 @@ import {
 import {CommandHandler} from "../../DiscordHandler/DiscordHandler";
 import {drizzle} from "drizzle-orm/node-postgres";
 import * as schema from "../../db/schema";
-import {CodePdf} from "./codePdf";
+import {CodePdf} from "./CodePdf";
 
 /* TODO
     - add a check if the user is allowed to use this command
