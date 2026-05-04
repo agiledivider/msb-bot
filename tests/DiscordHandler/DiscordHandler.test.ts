@@ -49,3 +49,22 @@ describe("Discord Handler - Events", () => {
         expect(discordHandler.isEvent('someRandomNotExistingEventName')).toBeFalse()
     })
 });
+
+describe("Discord Handler - constructed without a logger", () => {
+    test("constructor and start() do not throw when logger is omitted", () => {
+        const discordHandler = new DiscordHandler({
+            handlerPath: "",
+            client: new Client({ intents: [] }),
+        })
+        expect(() => discordHandler.start()).not.toThrow()
+    })
+
+    test("addService and service still work without an explicit logger", () => {
+        const discordHandler = new DiscordHandler({
+            handlerPath: "",
+            client: new Client({ intents: [] }),
+        })
+        discordHandler.addService("svc", { value: 1 })
+        expect(discordHandler.service("svc")).toEqual({ value: 1 })
+    })
+});

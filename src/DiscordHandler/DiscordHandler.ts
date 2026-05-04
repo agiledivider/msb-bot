@@ -11,7 +11,7 @@ import {
 } from "discord.js";
 import { Events } from "discord.js";
 import { ActionLoader } from "./ActionLoader";
-import { BaseLogger } from "pino";
+import pino, { BaseLogger } from "pino";
 import spaceStateInfo from "../handlers/spaceState/SpaceStateInfo";
 import { validateConfig } from "../Services/registry";
 
@@ -28,24 +28,27 @@ export interface Config {
 }
 
 export class DiscordHandler {
-  private services: any;
+  private services: Record<string, unknown> = {};
   private client: Client;
   private actionLoader: ActionLoader;
   private options: DiscordHandlerOptions;
   readonly commands: Map<string, CommandHandler> = new Map();
   readonly events: Map<string, EventHandler> = new Map();
   private rest: REST;
-  private logger?: BaseLogger;
+  private logger: BaseLogger;
   private config: object;
 
   constructor(options: DiscordHandlerOptions) {
-    this.logger = options.logger;
-    this.services = [];
+    // Default to a silent pino instance when no logger is provided so
+    // every internal `this.logger.X(...)` call is safe regardless of
+    // how the framework was constructed. Production passes a real
+    // configured logger via DiscordHandlerOptions.
+    this.logger = options.logger ?? pino({ level: "silent" });
     this.options = options;
     this.client = options.client;
     this.actionLoader = new ActionLoader({
       path: options.handlerPath,
-      logger: options.logger,
+      logger: this.logger,
     });
     this.options.registerCommands = options.registerCommands || false;
     this.rest = new REST().setToken(process.env.DISCORD_BOT_TOKEN);
@@ -207,7 +210,7 @@ export class DiscordHandler {
     }
     if (errors.length > 0) {
       const msg = `${errors.length} unmet service requirement(s):\n  - ${errors.join("\n  - ")}`;
-      this.logger?.error(
+      this.logger.error(
         "Bot will not start — service registration is incomplete.\n%s",
         msg,
       );
@@ -225,14 +228,14 @@ export class DiscordHandler {
         validateConfig(this.config);
       } catch (e) {
         const detail = e instanceof Error ? e.message : String(e);
-        this.logger?.error(
+        this.logger.error(
           "Bot will not start — config validation failed.\n%s",
           detail,
         );
         throw e;
       }
     }
-    this.logger?.info(
+    this.logger.info(
       `Verified ${all_actions.length} handlers; all required services present.`,
     );
     return this;

@@ -1,7 +1,7 @@
 import { ActionHandler, CommandHandler, EventHandler } from "./DiscordHandler";
 import * as fs from "node:fs";
 import * as path from "path";
-import { BaseLogger } from "pino";
+import pino, { BaseLogger } from "pino";
 
 export class ActionLoader {
   private actions: ActionHandler[] = [];
@@ -10,7 +10,9 @@ export class ActionLoader {
 
   constructor(options: ActionLoaderOptions) {
     this.path = options.path;
-    this.logger = options.logger;
+    // Default to a silent logger so the loader is safe to use without
+    // an explicit logger; matches DiscordHandler's behavior.
+    this.logger = options.logger ?? pino({ level: "silent" });
   }
 
   load() {
