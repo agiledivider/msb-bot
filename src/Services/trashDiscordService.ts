@@ -42,7 +42,8 @@ export class TrashDiscordService {
             guildId: '600336147142410254',
             jobSchedule: "*/10 * * * *", // alle 10 minuten
             messageLimit: 30,
-            reminderLimit: 10
+            reminderLimit: 10,
+            skipConfirmationTypes: ['Restmülltonne']
         }
         const config = require('../../msb.config.json');
         if (this.client?.user?.id == '1319391085641994280') {
@@ -89,10 +90,19 @@ export class TrashDiscordService {
         }
     }
 
+    static filterTypesNeedingConfirmation(
+        trashDates: TrashDate[],
+        skipTypes: string[],
+    ): TrashDate[] {
+        return trashDates.filter(td => !skipTypes.includes(td.type))
+    }
+
     private async askForAction(trashDates: TrashDate[]) {
         const trashTomorrow = trashDates.filter(trashDate => trashDate.daysUntil(new Date()) == 1)
-        if (trashTomorrow.length > 0 && !this.actionDone) {
-            const trashTypes = trashTomorrow.map(t => t.type).join(', ')
+        const skipTypes: string[] = this.conf.skipConfirmationTypes ?? []
+        const needsConfirmation = TrashDiscordService.filterTypesNeedingConfirmation(trashTomorrow, skipTypes)
+        if (needsConfirmation.length > 0 && !this.actionDone) {
+            const trashTypes = needsConfirmation.map(t => t.type).join(', ')
             this.logger.debug("Today needs to be done something")
             if (this.actionRequest == null) {
                 this.sendRequestForAction(trashTypes)
