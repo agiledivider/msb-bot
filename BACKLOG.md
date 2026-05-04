@@ -2,7 +2,7 @@
 
 Improvement candidates for `src/DiscordHandler/` and adjacent code, gathered from a self-review and a parallel review by the QualityDev agent on 2026-05-04. Each item has: the concrete problem, why it matters, and a sketch of the fix or test to write.
 
-Last updated 2026-05-04 after typed-handler + Zod-validation work landed (`6a97255`, `b28903a`, `34a4977`, `9426b39`).
+Last updated 2026-05-04 after #1, #2, and #15 landed on top of the typed-handler + Zod-validation work (`6a97255`, `b28903a`, `34a4977`, `9426b39`, `c622e3c`, `c631970`).
 
 Decide which to pull into work. Mark with `[x]` once accepted/scheduled, `[~]` if explicitly declined, leave `[ ]` if undecided.
 
@@ -16,6 +16,8 @@ The following commits have landed on `main` and address parts of this backlog:
 - `b28903a` feat(spaceState): POC handler using new typed pattern
 - `34a4977` feat(DiscordHandler): runtime config validation via Zod
 - `9426b39` feat(DiscordHandler): log structured error and exit cleanly on `start()` failure
+- `c622e3c` refactor(DiscordHandler): delete superseded decorate/executeHandlers/mergeDeep code (resolves #6, #9, #10, #13)
+- `c631970` fix(DiscordHandler): default to silent pino logger; fix services map type (resolves #1, #2)
 
 What's now in place:
 - An augmentable `Services` and `Config` type registry (`src/Services/registry.ts`).
@@ -46,27 +48,18 @@ These items existed in the original review but no longer fit the codebase. The f
 ### [~] 13. `🚀` emoji at `executeHandlers` log
 - **Status:** superseded. The line lives inside `executeHandlers()`, which we're deleting per #9.
 
-### NEW [ ] 15. Delete the superseded decorate/executeHandlers/mergeDeep code path
-- **Files:** `src/DiscordHandler/DiscordHandler.ts:107-189, 371-396`; `src/DiscordHandler/types.ts:21-52` (the parts only used by `decorate`/`mergeDeep`).
-- **Problem:** Three private fields (`useHandlers`, `decorators` if unreachable elsewhere) and three public methods (`decorate`, `_copyHandlers`, `executeHandlers`, `use`) plus the `mergeDeep` helper and the `Reconcile`/`IsBothObject`/`ContextAppendType` types form a dead chain. They're not used by `index.js` and don't fit the new typed-handler model. Keeping them around invites future drift and makes the file ~100 lines longer than it needs to be.
-- **Fix:** delete the lot, plus the `tests/DiscordHandler/DiscordHandler.test.ts` block titled `"Discord Handler - Events with context"` that tests `decorate` + `executeHandlers`. Keep the "test adding service" and "is event"/"is not event" tests — those exercise APIs that are still alive.
-- **Risk:** the test file imports `Reconcile` indirectly; verify nothing else does before removing types.
+### [x] 15. Delete the superseded decorate/executeHandlers/mergeDeep code path — DONE in `c622e3c`
+- Removed the `<Decorators>` generic, `decorators`/`useHandlers` fields, `on`/`handleEvent`/`decorate` (4 overloads)/`_copyHandlers`/`executeHandlers`/`use`, the `mergeDeep` helper, and the `Reconcile`/`IsBothObject`/`Prettify`/`ContextAppendType`/`EventContext` types from `types.ts`. Removed the corresponding test block. Net -241 lines, -3 type errors.
 
 ---
 
 ## Highest-value (still open)
 
-### [ ] 1. Optional `logger` crashes when omitted
-- **Files:** `src/DiscordHandler/DiscordHandler.ts:179, 193, 232, 261, 266, 280, 285`; `src/DiscordHandler/ActionLoader.ts:30, 32`
-- **Problem:** `DiscordHandlerOptions.logger` is typed `logger?: BaseLogger` (optional), but `this.logger.info/debug/error/trace` is called unconditionally throughout the class. Constructing without a logger throws `TypeError: Cannot read properties of undefined`. The eight `tsc` "Object is possibly 'undefined'" errors on logger calls are real crashes, not noise. Production currently masks this because `index.js` always passes a pino instance.
-- **Fix:** Default in constructor: `this.logger = options.logger ?? pino({ level: 'silent' })`. Or make `logger` required in `DiscordHandlerOptions`.
-- **Test:** Construct `DiscordHandler` without a `logger`; call `start()`; assert no throw.
+### [x] 1. Optional `logger` crashes when omitted — DONE in `c631970`
+- Constructor now defaults to `pino({ level: "silent" })` when no logger is provided; the field is typed as required `BaseLogger`. Same defaulting in `ActionLoader`. Two tests verify constructor + `start()` succeed without a logger. Eliminated 8 "Object is possibly 'undefined'" type errors.
 
-### [ ] 2. `services` initialized as `[]` but used as a map
-- **File:** `src/DiscordHandler/DiscordHandler.ts:37, 54, 290`
-- **Problem:** `private services: any` declared, then `this.services = []` (array) in the constructor, then `this.services[name] = service` in `addService` (treating it as an object map). The `...this.services` spread in `registerActions` only works *by accident* because string-keyed properties on arrays are still enumerable in object spread.
-- **Fix:** `private services: Record<string, unknown> = {}`. Drop the assignment in the constructor.
-- **Risk:** None — semantics unchanged.
+### [x] 2. `services` initialized as `[]` but used as a map — DONE in `c631970`
+- Field is now `private services: Record<string, unknown> = {}`; constructor's `this.services = []` line removed. Semantics unchanged.
 
 ### [ ] 3. Migrate legacy handlers to the typed-ctx pattern (was: untyped execute-context contract)
 - **Files:** legacy handlers in `src/handlers/` that still destructure an untyped ctx, e.g. `spaceState/SpaceStateInfo.ts:16`, `memberCode/generateCodesCommand.ts`, `trashInfos/regularTrashInfos.ts:11`, `welcomeUsers/*`, `welcomeMember/*`, `presenceEvent.ts`.
@@ -134,13 +127,13 @@ These items existed in the original review but no longer fit the codebase. The f
 
 ## Recommended sequencing
 
-1. **#15** — delete the superseded decorate/executeHandlers/mergeDeep block. ~100 lines come out, the file gets sharper, several other items dissolve as a side effect (#6, #9, #10, #13).
-2. **#1 + #2** together — small, low risk, eliminates ~8 of the 89 `tsc` errors.
-3. **#4** — wire `Config` from the registry into `this.config` and fix `refreshCommands` for older runtimes.
-4. **#3 migration** — convert handlers to `defineEventHandler` one at a time. After each, delete the corresponding old class. The POC stays last; remove it once the real `SpaceStateInfo.ts` is migrated.
-5. **#5 + #7 + #8** — once typing is solid these become mechanical: write the test first, then make the change.
-6. **#14** — kill the bot-ID config switch; everything goes through `validateConfig`.
-7. **#11 + #12** — small cleanups.
+Done so far: #1, #2, #6, #9, #10, #13, #15.
+
+1. **#4** — wire `Config` from the registry into `this.config` and fix `refreshCommands` for older runtimes. Removes the next ~3 `tsc` errors and gives `config.guildId` a real type.
+2. **#3 migration** — convert handlers to `defineEventHandler` one at a time. After each, delete the corresponding old class. The POC stays last; remove it once the real `SpaceStateInfo.ts` is migrated.
+3. **#5 + #7 + #8** — once typing is solid these become mechanical: write the test first, then make the change.
+4. **#14** — kill the bot-ID config switch; everything goes through `validateConfig`.
+5. **#11 + #12** — small cleanups.
 
 ## Source
 
