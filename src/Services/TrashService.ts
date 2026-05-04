@@ -1,3 +1,13 @@
+// POC — TrashService registers itself in the global Services map by
+// augmenting the registry interface. Compile-time only; no runtime cost.
+// Removing this block would make `ctx.trashService` unavailable to
+// handlers that declared it as a need.
+declare module "./registry" {
+    interface Services {
+        trashService: TrashService
+    }
+}
+
 export interface DateService {
     now(): Date
 }

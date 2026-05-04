@@ -93,6 +93,7 @@ discordHandler.addService('config', config)
 discordHandler.addService('logger', logger)
 discordHandler.addService('spaceStateService', new SpaceStateService())
 
+discordHandler.start()
 
 client.on('ready', () => {
   console.log('client ready')

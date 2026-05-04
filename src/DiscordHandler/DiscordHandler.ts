@@ -188,25 +188,47 @@ export class DiscordHandler<Decorators = {}> {
     return this;
   }
 
+  // Build a context that only contains the services a handler declared
+  // via `requiredServices`. Used for handlers defined with
+  // `defineEventHandler`. Legacy handlers keep the old broad spread.
+  private buildTypedCtx(
+    requiredServices: readonly string[],
+  ): Record<string, unknown> {
+    const all: Record<string, unknown> = {
+      client: this.client,
+      logger: this.logger,
+      discordHandler: this,
+      ...this.services,
+    };
+    const ctx: Record<string, unknown> = {};
+    for (const key of requiredServices) {
+      ctx[key] = all[key];
+    }
+    return ctx;
+  }
+
   private registerActions() {
     const actions = this.actionLoader.load();
     this.logger.debug(actions);
     actions.forEach((action: any) => {
       if (action.eventType) {
         if (action.execute && typeof action.execute === "function" ) {
-          let args = {};
           this.logger.trace(
             "registering event %o on %s",
             action.eventType.toString(),
             action.constructor.name,
           );
           this.client.on(action.eventType.toString(), (...args) => {
-            action.execute(args, {
-              client: this.client,
-              logger: this.logger,
-              discordHandler: this,
-              ...this.services,
-            });
+            const required = action.requiredServices;
+            const ctx = Array.isArray(required)
+              ? this.buildTypedCtx(required)
+              : {
+                  client: this.client,
+                  logger: this.logger,
+                  discordHandler: this,
+                  ...this.services,
+                };
+            action.execute(args, ctx);
           });
         } else {
           this.logger.trace(
@@ -288,6 +310,45 @@ export class DiscordHandler<Decorators = {}> {
 
   addService(name: string, service: any) {
     this.services[name] = service;
+  }
+
+  // Verify that every loaded handler's declared `requiredServices` are
+  // actually registered. Throws with a single error listing every gap so
+  // misconfiguration surfaces at startup rather than as silent
+  // `undefined`s when an event fires. Call after the addService() chain
+  // is complete and before client.login().
+  start(): this {
+    const all: Record<string, unknown> = {
+      client: this.client,
+      logger: this.logger,
+      discordHandler: this,
+      ...this.services,
+    };
+    const errors: string[] = [];
+    const all_actions = [
+      ...this.events.values(),
+      ...this.commands.values(),
+    ];
+    for (const action of all_actions as any[]) {
+      const required = action.requiredServices;
+      if (!Array.isArray(required)) continue;
+      for (const key of required) {
+        if (!(key in all)) {
+          errors.push(
+            `Handler "${action.getName()}" needs service "${key}" but it was not registered. Add .addService("${key}", ...) before .start().`,
+          );
+        }
+      }
+    }
+    if (errors.length > 0) {
+      throw new Error(
+        `DiscordHandler.start(): ${errors.length} unmet service requirement(s):\n  - ${errors.join("\n  - ")}`,
+      );
+    }
+    this.logger?.info(
+      `Verified ${all_actions.length} handlers; all required services present.`,
+    );
+    return this;
   }
 
   service(name: string) {
