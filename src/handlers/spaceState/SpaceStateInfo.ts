@@ -30,23 +30,23 @@ export default defineEventHandler({
   name: "spacestate handler",
   eventType: Events.ClientReady,
   needs: ["client", "logger", "config"],
-  execute([], ctx) {
-    ctx.logger.debug("spaceStateInfo execute called");
+  execute([], { client, logger, config }) {
+    logger.debug("spaceStateInfo execute called");
     if (processor) return;
 
-    const channelId = ctx.config.spaceStateInfo.channelId;
-    ctx.logger.debug("spaceStateInfo channelId %s", channelId);
+    const channelId = config.spaceStateInfo.channelId;
+    logger.debug("spaceStateInfo channelId %s", channelId);
 
-    const channel = ctx.client.channels.cache.get(channelId);
+    const channel = client.channels.cache.get(channelId);
     if (!channel || !(channel instanceof TextChannel)) {
-      ctx.logger.error("channel not found: %s", String(channel));
+      logger.error("channel not found: %s", String(channel));
       return;
     }
 
     processor = new SpaceStateInfoProcessor(
       channel,
-      ctx.logger,
-      ctx.config.spaceStateInfo.mqttTopic,
+      logger,
+      config.spaceStateInfo.mqttTopic,
     );
   },
 });
