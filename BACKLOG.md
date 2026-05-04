@@ -27,6 +27,7 @@ The following commits have landed on `main` and address parts of this backlog:
 - `bf0f434` refactor(welcome): migrate welcomeMessage to defineEventHandler (fourth handler under #3)
 - `c7a2a43` refactor(welcomeMember): migrate welcomeInfos to defineEventHandler (fifth handler under #3; resolves a name-collision instance of #5)
 - `e3dbc46` chore(trashInfos): delete empty regularTrashInfos handler (dead stub; -4 type errors)
+- `c7541dc` feat(DiscordHandler): defineCommandHandler with typed-ctx dispatch (unblocks command-handler migrations)
 
 What's now in place:
 - An augmentable `Services` and `Config` type registry (`src/Services/registry.ts`).
@@ -72,9 +73,8 @@ These items existed in the original review but no longer fit the codebase. The f
 
 ### [ ] 3. Migrate legacy handlers to the typed-ctx pattern (was: untyped execute-context contract)
 - **Status:** in progress. Migrated: `SpaceStateInfo.ts` (`d4a3ed7`), `presenceEvent.ts` (`3d11e22`), `readyHandler.ts` (`85a8934`), `welcomeUsers/welcomeMessage.ts` (`bf0f434`), `welcomeMember/welcomeInfos.ts` (`c7a2a43`). Deleted as dead stubs: `trashInfos/regularTrashInfos.ts` (`e3dbc46`). Remaining handlers still on the untyped pattern: `memberCode/generateCodesCommand.ts`, `memberCode/listUnusedCodesCommand.ts`, `memberCode/membercodeCommand.ts`, `trashInfos/nextTrashDatesCommand.ts`, `trashInfos/reactOnButtonClickInteractionCreateHandler.ts`, `spaceState/changeSpaceState.ts`. Plus the untracked `askForInfos.ts`.
-- **Per-handler steps:** convert to `defineEventHandler` (or `defineCommandHandler` once we add it) with explicit `needs`, destructure the ctx in the `execute` signature (e.g. `execute(args, { logger, config })`) — established convention — declare any config slice this handler reads via `registerConfigSlice` + `z.infer`, drop the untyped class body. Tighten any internal classes/services it constructs to take only what they actually need (see `d4a3ed7`'s `SpaceStateInfoProcessor` example).
-- **Sequencing:** safe to do one handler per PR. The framework supports both old and new shapes simultaneously, so there is no flag-day.
-- **Note:** the framework currently only supports `defineEventHandler`. Commands still use the legacy class shape. A `defineCommandHandler` helper needs to be added before the command handlers (`memberCode/*`, `nextTrashDatesCommand`, etc.) can be migrated.
+- **Per-handler steps:** convert to `defineEventHandler` or `defineCommandHandler` with explicit `needs`, destructure the ctx in the `execute` signature (e.g. `execute(args, { logger, config })` for events, `execute(interaction, { logger })` for commands) — established convention — declare any config slice this handler reads via `registerConfigSlice` + `z.infer`, drop the untyped class body. Tighten any internal classes/services it constructs to take only what they actually need (see `d4a3ed7`'s `SpaceStateInfoProcessor` example).
+- **Sequencing:** safe to do one handler per PR. The framework supports both old and new shapes simultaneously, so there is no flag-day. Both `defineEventHandler` and `defineCommandHandler` are now available (the latter added in `c7541dc`).
 
 ### [x] 4. `refreshCommands` will crash on older runtimes; `config.guildId` is unsafe — DONE in `ed19205`
 - Iterator Helpers replaced with `Array.from(this.commands.values()).map(v => v.command)`. `this.config` typed as `Config | undefined` from the registry. Framework's own `guildId` slice registered via `registerConfigSlice` so it's validated alongside handler slices at `start()`. -5 type errors.
