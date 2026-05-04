@@ -130,31 +130,44 @@ export class DiscordHandler {
       }
     });
     this.client.on("interactionCreate", async (interaction) => {
-      if (interaction.isCommand()) {
-        const command = this.commands.get(interaction.commandName);
-        if (!command) {
-          this.logger.error(`No command found for ${interaction.commandName}`);
-          interaction.reply({
-            content: `sorry, no command found for ${interaction.commandName}`,
-            flags: MessageFlags.Ephemeral,
-          });
-          return;
-        }
-        try {
-          if (typeof command.execute === "function" && command.execute) {
-            this.logger.debug("executing command %o", command.command.name);
-            command.execute({
-              interaction,
-              client: this.client,
-              discordHandler: this,
-              ...this.services,
-            });
-          } else {
-            command.run(this.client, interaction, this);
+      if (!interaction.isCommand()) return;
+      const command: any = this.commands.get(interaction.commandName);
+      if (!command) {
+        this.logger.error(`No command found for ${interaction.commandName}`);
+        interaction.reply({
+          content: `sorry, no command found for ${interaction.commandName}`,
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+      try {
+        const required = command.requiredServices;
+        if (Array.isArray(required) && typeof command.execute === "function") {
+          // Typed handler defined via defineCommandHandler.
+          if (!interaction.isChatInputCommand()) {
+            this.logger.error(
+              "typed command handler %o received a non-chat-input interaction; skipping",
+              command.command.name,
+            );
+            return;
           }
-        } catch (error) {
-          console.error(`ERROR running ${interaction.commandName}`, error);
+          this.logger.debug("executing command %o", command.command.name);
+          await command.execute(interaction, this.buildTypedCtx(required));
+        } else if (typeof command.execute === "function") {
+          // Legacy execute path.
+          this.logger.debug("executing command %o", command.command.name);
+          command.execute({
+            interaction,
+            client: this.client,
+            discordHandler: this,
+            ...this.services,
+          });
+        } else {
+          // Legacy run path.
+          command.run(this.client, interaction, this);
         }
+      } catch (error) {
+        console.error(`ERROR running ${interaction.commandName}`, error);
       }
     });
     this.refreshCommands();
