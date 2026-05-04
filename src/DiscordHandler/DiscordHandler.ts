@@ -342,15 +342,31 @@ export class DiscordHandler<Decorators = {}> {
       }
     }
     if (errors.length > 0) {
-      throw new Error(
-        `DiscordHandler.start(): ${errors.length} unmet service requirement(s):\n  - ${errors.join("\n  - ")}`,
+      const msg = `${errors.length} unmet service requirement(s):\n  - ${errors.join("\n  - ")}`;
+      this.logger?.error(
+        "Bot will not start — service registration is incomplete.\n%s",
+        msg,
       );
+      throw new Error(`DiscordHandler.start(): ${msg}`);
     }
     // Validate runtime config against every slice registered by
     // services/handlers via `registerConfigSlice`. No-op if nothing
-    // registered, so legacy code paths are unaffected.
+    // registered, so legacy code paths are unaffected. On failure log
+    // the structured Zod error via the project logger before
+    // propagating, so the message lands in the same log stream as the
+    // rest of the boot sequence rather than as an uncaught-exception
+    // stack trace.
     if (this.config) {
-      validateConfig(this.config);
+      try {
+        validateConfig(this.config);
+      } catch (e) {
+        const detail = e instanceof Error ? e.message : String(e);
+        this.logger?.error(
+          "Bot will not start — config validation failed.\n%s",
+          detail,
+        );
+        throw e;
+      }
     }
     this.logger?.info(
       `Verified ${all_actions.length} handlers; all required services present.`,

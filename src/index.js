@@ -93,7 +93,14 @@ discordHandler.addService('config', config)
 discordHandler.addService('logger', logger)
 discordHandler.addService('spaceStateService', new SpaceStateService())
 
-discordHandler.start()
+try {
+  discordHandler.start()
+} catch {
+  // start() already logged the structured failure via the project
+  // logger; suppress the noisy stack-trace dump and exit cleanly so
+  // the bot definitely does not connect to Discord.
+  process.exit(1)
+}
 
 client.on('ready', () => {
   console.log('client ready')

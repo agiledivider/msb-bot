@@ -99,4 +99,61 @@ describe("DiscordHandler.start() — config validation", () => {
     // myService is not registered
     expect(() => h.start()).toThrow(/myService/);
   });
+
+  test("logs structured error via logger.error before throwing on config failure", () => {
+    registerConfigSlice({
+      myFeature: z.object({ apiKey: z.string() }),
+    });
+    const errorMessages: string[] = [];
+    const captureLogger = {
+      error: (...args: unknown[]) =>
+        errorMessages.push(args.map((a) => String(a)).join(" ")),
+      info: () => {},
+      debug: () => {},
+      warn: () => {},
+      trace: () => {},
+      fatal: () => {},
+      child: () => captureLogger,
+      level: "info",
+    };
+    const h = new DiscordHandler({
+      handlerPath: fixturePath,
+      client: new Client({ intents: [] }),
+      logger: captureLogger as any,
+      config: { myFeature: {} },
+    });
+    h.addService("myService", {});
+
+    expect(() => h.start()).toThrow();
+    expect(errorMessages.length).toBeGreaterThan(0);
+    const combined = errorMessages.join("\n");
+    expect(combined).toMatch(/Bot will not start/);
+    expect(combined).toMatch(/config validation failed/i);
+    expect(combined).toMatch(/myFeature\.apiKey/);
+  });
+
+  test("logs structured error via logger.error before throwing on missing service", () => {
+    const errorMessages: string[] = [];
+    const captureLogger = {
+      error: (...args: unknown[]) =>
+        errorMessages.push(args.map((a) => String(a)).join(" ")),
+      info: () => {},
+      debug: () => {},
+      warn: () => {},
+      trace: () => {},
+      fatal: () => {},
+      child: () => captureLogger,
+      level: "info",
+    };
+    const h = new DiscordHandler({
+      handlerPath: fixturePath,
+      client: new Client({ intents: [] }),
+      logger: captureLogger as any,
+    });
+    // myService not registered → service requirement unmet
+    expect(() => h.start()).toThrow();
+    const combined = errorMessages.join("\n");
+    expect(combined).toMatch(/Bot will not start/);
+    expect(combined).toMatch(/myService/);
+  });
 });
