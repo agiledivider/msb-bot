@@ -18,6 +18,8 @@ The following commits have landed on `main` and address parts of this backlog:
 - `9426b39` feat(DiscordHandler): log structured error and exit cleanly on `start()` failure
 - `c622e3c` refactor(DiscordHandler): delete superseded decorate/executeHandlers/mergeDeep code (resolves #6, #9, #10, #13)
 - `c631970` fix(DiscordHandler): default to silent pino logger; fix services map type (resolves #1, #2)
+- `d41f53d` chore: remove projects feature (command, service, schema, test) — fixes the only previously-failing test
+- `ed19205` fix(DiscordHandler): type config from registry; replace Iterator Helpers (resolves #4)
 
 What's now in place:
 - An augmentable `Services` and `Config` type registry (`src/Services/registry.ts`).
@@ -66,12 +68,8 @@ These items existed in the original review but no longer fit the codebase. The f
 - **Status:** the *pattern* is implemented (`defineEventHandler` + `requiredServices` + `Pick<Services, K>` ctx). The *migration* of existing handlers is the remaining work. Each file gets converted to `defineEventHandler({...})` plus its own `declare module` augmentation for any config slice it reads, then delete its untyped class body.
 - **Sequencing:** safe to do one handler per PR. The framework supports both old and new shapes simultaneously, so there is no flag-day.
 
-### [ ] 4. `refreshCommands` will crash on older runtimes; `config.guildId` is unsafe
-- **File:** `src/DiscordHandler/DiscordHandler.ts:264, 270-273`
-- **Problems:**
-  - `this.commands.values().map((value, index) => value.command).toArray()` uses TC39 Iterator Helpers (`MapIterator#map`/`#toArray`). Available in current Bun and Node 22+; absent in Node 18 and older Bun. Will throw `TypeError: ... .map is not a function` if anyone runs it on an older runtime.
-  - `this.config.guildId` errors at compile time because `config` is typed `object`. With the new registry, this can become `this.config: Config` (from `../Services/registry`), and `guildId` can be added either as a base field there or via a `declare module` augmentation in this file.
-- **Fix:** `Array.from(this.commands.values()).map(v => v.command)`. Type `this.config` as `Config` from the registry, plus an augmentation contributing `guildId: string`.
+### [x] 4. `refreshCommands` will crash on older runtimes; `config.guildId` is unsafe — DONE in `ed19205`
+- Iterator Helpers replaced with `Array.from(this.commands.values()).map(v => v.command)`. `this.config` typed as `Config | undefined` from the registry. Framework's own `guildId` slice registered via `registerConfigSlice` so it's validated alongside handler slices at `start()`. -5 type errors.
 
 ### [ ] 5. Double-listener registration on event handlers; silent map overwrites
 - **File:** `src/DiscordHandler/DiscordHandler.ts:203, 217-220, 222`
@@ -127,13 +125,12 @@ These items existed in the original review but no longer fit the codebase. The f
 
 ## Recommended sequencing
 
-Done so far: #1, #2, #6, #9, #10, #13, #15.
+Done so far: #1, #2, #4, #6, #9, #10, #13, #15. Plus the projects feature removal (`d41f53d`) which fixed the only previously-failing test.
 
-1. **#4** — wire `Config` from the registry into `this.config` and fix `refreshCommands` for older runtimes. Removes the next ~3 `tsc` errors and gives `config.guildId` a real type.
-2. **#3 migration** — convert handlers to `defineEventHandler` one at a time. After each, delete the corresponding old class. The POC stays last; remove it once the real `SpaceStateInfo.ts` is migrated.
-3. **#5 + #7 + #8** — once typing is solid these become mechanical: write the test first, then make the change.
-4. **#14** — kill the bot-ID config switch; everything goes through `validateConfig`.
-5. **#11 + #12** — small cleanups.
+1. **#3 migration** — convert handlers to `defineEventHandler` one at a time. After each, delete the corresponding old class. The POC stays last; remove it once the real `SpaceStateInfo.ts` is migrated.
+2. **#5 + #7 + #8** — once typing is solid these become mechanical: write the test first, then make the change.
+3. **#14** — kill the bot-ID config switch; everything goes through `validateConfig`.
+4. **#11 + #12** — small cleanups.
 
 ## Source
 
