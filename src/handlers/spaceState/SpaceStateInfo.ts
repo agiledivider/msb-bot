@@ -2,7 +2,6 @@ import { ClientReadyEvent } from "../../DiscordHandler/eventTypes";
 import { Events, TextChannel } from "discord.js";
 import mqtt, { MqttClient } from "mqtt";
 import { Logger } from "pino";
-import { Config } from "../../DiscordHandler/DiscordHandler";
 
 type State = {
   open: boolean;

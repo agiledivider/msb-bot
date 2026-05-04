@@ -12,19 +12,34 @@ import {
 import { Events } from "discord.js";
 import { ActionLoader } from "./ActionLoader";
 import pino, { BaseLogger } from "pino";
+import { z } from "zod";
 import spaceStateInfo from "../handlers/spaceState/SpaceStateInfo";
-import { validateConfig } from "../Services/registry";
+import {
+  Config,
+  registerConfigSlice,
+  validateConfig,
+} from "../Services/registry";
+
+// The framework itself reads `guildId` from config in refreshCommands.
+// Register the slice so it gets validated alongside everything else at
+// start() time, and contribute the type via declaration merging so
+// `this.config.guildId` is typed without a project-specific augmentation.
+registerConfigSlice({
+  guildId: z.string(),
+});
+
+declare module "../Services/registry" {
+  interface Config {
+    guildId: string;
+  }
+}
 
 export interface DiscordHandlerOptions {
   client: Client;
   handlerPath: string;
   registerCommands?: boolean;
-  config?: object;
+  config?: Config;
   logger?: BaseLogger;
-}
-
-export interface Config {
-  spaceStateInfo?: object;
 }
 
 export class DiscordHandler {
@@ -36,7 +51,7 @@ export class DiscordHandler {
   readonly events: Map<string, EventHandler> = new Map();
   private rest: REST;
   private logger: BaseLogger;
-  private config: object;
+  private config: Config | undefined;
 
   constructor(options: DiscordHandlerOptions) {
     // Default to a silent pino instance when no logger is provided so
@@ -151,16 +166,21 @@ export class DiscordHandler {
       this.logger.info("skipping command registration");
       return;
     }
-    const guildId = this.config.guildId;
+    const guildId = this.config?.guildId;
+    if (!guildId) {
+      this.logger.warn(
+        "registerCommands is true but no config.guildId was provided; skipping command registration.",
+      );
+      return;
+    }
     try {
       this.logger.info(
         `Started refreshing ${this.commands.size} application (/) commands for guild ${guildId}.`,
       );
 
-      const commandJson: ApplicationCommandData[] = this.commands
-        .values()
-        .map((value, index) => value.command)
-        .toArray();
+      const commandJson: ApplicationCommandData[] = Array.from(
+        this.commands.values(),
+      ).map((value) => value.command);
 
       const data: ApplicationCommand[] = (await this.rest.put(
         Routes.applicationGuildCommands(process.env.DISCORD_CLIENT_ID, guildId),

@@ -3,7 +3,7 @@ import spaceStateInfo from './handlers/spaceState/SpaceStateInfo'
 const { Client, GatewayIntentBits, Partials } = require('discord.js');
 const { join } = require('path')
 const { TrashService, icsTrashRepository, RealDateService } = require('./Services/TrashService')
-const { DiscordHandler, Config } = require('./DiscordHandler/DiscordHandler')
+const { DiscordHandler } = require('./DiscordHandler/DiscordHandler')
 import {migrate} from 'drizzle-orm/node-postgres/migrator';
 import * as schema from "./db/schema";
 import pino from 'pino'

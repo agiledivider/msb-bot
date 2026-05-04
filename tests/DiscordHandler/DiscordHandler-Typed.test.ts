@@ -132,6 +132,24 @@ describe("DiscordHandler.start() — config validation", () => {
     expect(combined).toMatch(/myFeature\.apiKey/);
   });
 
+  test("validates the framework's own guildId config slice", () => {
+    // The framework registers `guildId` as a required string. Tests that
+    // reset slices (above) wipe that registration; here we re-register
+    // it explicitly so we can verify the framework's own dependency is
+    // enforced end-to-end.
+    registerConfigSlice({ guildId: z.string() });
+
+    const h = new DiscordHandler({
+      handlerPath: fixturePath,
+      client: new Client({ intents: [] }),
+      logger,
+      // config provided but missing guildId
+      config: {} as any,
+    });
+    h.addService("myService", {});
+    expect(() => h.start()).toThrow(/guildId/);
+  });
+
   test("logs structured error via logger.error before throwing on missing service", () => {
     const errorMessages: string[] = [];
     const captureLogger = {
