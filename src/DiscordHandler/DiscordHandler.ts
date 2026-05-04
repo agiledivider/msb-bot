@@ -13,7 +13,6 @@ import { Events } from "discord.js";
 import { ActionLoader } from "./ActionLoader";
 import pino, { BaseLogger } from "pino";
 import { z } from "zod";
-import spaceStateInfo from "../handlers/spaceState/SpaceStateInfo";
 import {
   Config,
   registerConfigSlice,

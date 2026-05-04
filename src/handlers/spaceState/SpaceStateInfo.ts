@@ -1,60 +1,66 @@
-import { ClientReadyEvent } from "../../DiscordHandler/eventTypes";
 import { Events, TextChannel } from "discord.js";
 import mqtt, { MqttClient } from "mqtt";
 import { Logger } from "pino";
+import { z } from "zod";
+import { defineEventHandler } from "../../DiscordHandler/define";
+import { registerConfigSlice } from "../../Services/registry";
+
+const configSlice = registerConfigSlice({
+  spaceStateInfo: z.object({
+    channelId: z.string(),
+    guildId: z.string(),
+    mqttTopic: z.string(),
+  }),
+});
+
+declare module "../../Services/registry" {
+  interface Config extends z.infer<typeof configSlice> {}
+}
 
 type State = {
   open: boolean;
   openUntil: string;
 };
 
-class SpaceStateInfoHandler implements ClientReadyEvent {
-  eventType: Events.ClientReady = Events.ClientReady;
-  spaceStateInfo?: SpaceStateInfoProcessor;
+// ClientReady can fire more than once across reconnects; the module-level
+// reference makes sure we only spin up one MQTT subscriber.
+let processor: SpaceStateInfoProcessor | undefined;
 
-  execute([], { logger, client, config }) {
-    logger.debug("spaceStateInfo execute called");
-    logger.debug("spaceStateInfo %s", config);
-    if (!this.spaceStateInfo) {
-      //const guild = client.guilds.cache.get(config.spaceStateInfo.guildId);
-      logger.debug(
-        "spaceStateInfo channelId %s",
-        config?.spaceStateInfo?.channelId,
-      );
-      //if (!guild) {
-      //    logger.error('guild not found')
-      const channel = client.channels.cache.get(
-        config.spaceStateInfo.channelId,
-      );
-      if (!channel || !(channel instanceof TextChannel)) {
-        logger.error("channel not found %o", channel);
-        return;
-      }
-      this.spaceStateInfo = new SpaceStateInfoProcessor(
-        channel,
-        logger,
-        config,
-      );
+export default defineEventHandler({
+  name: "spacestate handler",
+  eventType: Events.ClientReady,
+  needs: ["client", "logger", "config"],
+  execute([], ctx) {
+    ctx.logger.debug("spaceStateInfo execute called");
+    if (processor) return;
+
+    const channelId = ctx.config.spaceStateInfo.channelId;
+    ctx.logger.debug("spaceStateInfo channelId %s", channelId);
+
+    const channel = ctx.client.channels.cache.get(channelId);
+    if (!channel || !(channel instanceof TextChannel)) {
+      ctx.logger.error("channel not found: %s", String(channel));
+      return;
     }
-  }
 
-  getName(): string {
-    return "spacestate handler";
-  }
-}
-
-export default SpaceStateInfoHandler;
+    processor = new SpaceStateInfoProcessor(
+      channel,
+      ctx.logger,
+      ctx.config.spaceStateInfo.mqttTopic,
+    );
+  },
+});
 
 class SpaceStateInfoProcessor {
   private mqttClient: MqttClient;
   private channel: TextChannel;
-  private lastState: State;
-  private statechanges = [];
+  private lastState: State | undefined;
+  private statechanges: State[] = [];
   private logger: Logger;
-  private config: any;
+  private mqttTopic: string;
 
-  constructor(channel: TextChannel, logger: Logger, config) {
-    this.config = config;
+  constructor(channel: TextChannel, logger: Logger, mqttTopic: string) {
+    this.mqttTopic = mqttTopic;
     this.logger = logger.child(
       {},
       { msgPrefix: `[${this.constructor.name}] ` },
@@ -104,8 +110,8 @@ class SpaceStateInfoProcessor {
 
     mqttClient.on("connect", () => {
       this.logger.info("connected to mqtt");
-      mqttClient.subscribe(this.config.spaceStateInfo.mqttTopic, () => {
-        this.logger.info("subscribed %o", this.config.spaceStateInfo.mqttTopic);
+      mqttClient.subscribe(this.mqttTopic, () => {
+        this.logger.info("subscribed %o", this.mqttTopic);
       });
     });
 
@@ -126,7 +132,7 @@ class SpaceStateInfoProcessor {
     this.logger.debug("statechanges %o", this.statechanges);
     if (this.statechanges.length > 4) {
       this.statechanges = this.statechanges.filter(
-        (state) => state.lastchange > Date.now() / 1000 - 3600,
+        (state: any) => state.lastchange > Date.now() / 1000 - 3600,
       );
       this.logger.debug("statechanges length %o", this.statechanges.length);
       if (this.statechanges.length > 4) {
