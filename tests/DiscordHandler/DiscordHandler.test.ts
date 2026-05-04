@@ -48,36 +48,4 @@ describe("Discord Handler - Events", () => {
         })
         expect(discordHandler.isEvent('someRandomNotExistingEventName')).toBeFalse()
     })
-
-    
 });
-
-class TestClass {
-}
-
-describe("Discord Handler - Events with context", () => {
-    test("test context", async () => {
-        let discordHandler = new DiscordHandler({
-            handlerPath: "",
-            client: new Client ({intents: [] }),
-            logger
-        })
-
-        //discordHandler.decorate('version', '1.0')
-        discordHandler = discordHandler
-            .decorate({ environment: 'dev' })
-            .decorate({ version: '1.0' })
-            .decorate('testClass', new TestClass())
-            .use((ctx) => {
-                console.log("test decorator", ctx)
-                expect(ctx.version).toBe('1.0')
-                expect(ctx.environment).toBe('dev')
-                expect(ctx.testClass).toBeInstanceOf(TestClass)
-            })
-
-        discordHandler.executeHandlers()
-
-    })
-})
-
-

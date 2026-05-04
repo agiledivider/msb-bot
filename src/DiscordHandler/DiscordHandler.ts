@@ -11,12 +11,6 @@ import {
 } from "discord.js";
 import { Events } from "discord.js";
 import { ActionLoader } from "./ActionLoader";
-import {
-  ContextAppendType,
-  DiscordEventMap,
-  EventContext,
-  Reconcile,
-} from "./types";
 import { BaseLogger } from "pino";
 import spaceStateInfo from "../handlers/spaceState/SpaceStateInfo";
 import { validateConfig } from "../Services/registry";
@@ -33,8 +27,7 @@ export interface Config {
   spaceStateInfo?: object;
 }
 
-export class DiscordHandler<Decorators = {}> {
-  private useHandlers: ((ctx: Decorators) => void)[] = [];
+export class DiscordHandler {
   private services: any;
   private client: Client;
   private actionLoader: ActionLoader;
@@ -45,13 +38,8 @@ export class DiscordHandler<Decorators = {}> {
   private logger?: BaseLogger;
   private config: object;
 
-  constructor(
-    options: DiscordHandlerOptions,
-    private decorators: Decorators = {} as Decorators,
-  ) {
+  constructor(options: DiscordHandlerOptions) {
     this.logger = options.logger;
-    this.decorators = decorators;
-    this.logger?.debug("this.decorators %o", this.decorators);
     this.services = [];
     this.options = options;
     this.client = options.client;
@@ -63,130 +51,6 @@ export class DiscordHandler<Decorators = {}> {
     this.rest = new REST().setToken(process.env.DISCORD_BOT_TOKEN);
     this.config = options.config;
     this.registerActions();
-  }
-
-  private eventHandlers: {
-    [E in keyof DiscordEventMap]?: Array<
-      (ctx: Decorators & EventContext<E>) => void
-    >;
-  } = {};
-
-  on<E extends keyof DiscordEventMap>(
-    event: E,
-    handler: (ctx: Decorators & EventContext<E>) => void,
-  ): this {
-    if (!this.eventHandlers[event]) {
-      this.eventHandlers[event] = [];
-    }
-    this.eventHandlers[event]!.push(handler);
-
-    // Register the Discord.js event if not already done
-    if (!this.client.listenerCount(event)) {
-      this.client.on(event, (...args: DiscordEventMap[E]) => {
-        this.handleEvent(event, args);
-      });
-    }
-
-    return this;
-  }
-
-  private handleEvent<E extends keyof DiscordEventMap>(
-    event: E,
-    args: DiscordEventMap[E],
-  ) {
-    const handlers = this.eventHandlers[event];
-    if (handlers) {
-      const eventContext: EventContext<E> = { event, args };
-      const fullContext = { ...this.decorators, ...eventContext };
-
-      for (const handler of handlers) {
-        handler(fullContext as Decorators & EventContext<E>);
-      }
-    }
-  }
-
-  decorate<Name extends string, Value>(
-    name: Name,
-    value: Value,
-  ): DiscordHandler<Reconcile<Decorators, { [K in Name]: Value }>>;
-
-  decorate<NewDecorators extends Record<string, unknown>>(
-    decorators: NewDecorators,
-  ): DiscordHandler<Reconcile<Decorators, NewDecorators>>;
-
-  decorate<
-    NewDecorators extends Record<string, unknown>,
-    Type extends ContextAppendType = "append",
-  >(
-    options: { as: Type },
-    decorators: NewDecorators,
-  ): DiscordHandler<
-    Reconcile<Decorators, NewDecorators, Type extends "override" ? true : false>
-  >;
-
-  decorate<
-    Name extends string,
-    Value,
-    Type extends ContextAppendType = "append",
-  >(
-    options: { as: Type },
-    name: Name,
-    value: Value,
-  ): DiscordHandler<
-    Reconcile<
-      Decorators,
-      { [K in Name]: Value },
-      Type extends "override" ? true : false
-    >
-  >;
-
-  decorate(...args: any[]): DiscordHandler<any> {
-    let decorators: Record<string, unknown> = {};
-    let override = false;
-
-    if (args.length === 1 && typeof args[0] === "object") {
-      decorators = args[0];
-    } else if (args.length === 2 && typeof args[0] === "string") {
-      decorators = { [args[0]]: args[1] };
-    } else if (
-      args.length === 2 &&
-      typeof args[0] === "object" &&
-      "as" in args[0]
-    ) {
-      decorators = args[1];
-      override = args[0].as === "override";
-    } else if (
-      args.length === 3 &&
-      typeof args[0] === "object" &&
-      "as" in args[0] &&
-      typeof args[1] === "string"
-    ) {
-      decorators = { [args[1]]: args[2] };
-      override = args[0].as === "override";
-    }
-
-    const newDecorators = mergeDeep(this.decorators, decorators, override);
-    return new DiscordHandler(this.options, newDecorators)._copyHandlers(
-      this.useHandlers,
-    );
-  }
-
-  private _copyHandlers(handlers: ((ctx: any) => void)[]) {
-    this.useHandlers = [...handlers];
-    return this;
-  }
-
-  executeHandlers() {
-    this.logger.info("🚀 Running app with context:");
-    this.logger.info(this.decorators);
-    for (const handler of this.useHandlers) {
-      handler(this.decorators);
-    }
-  }
-
-  use(handler: (ctx: Decorators) => void) {
-    this.useHandlers.push(handler);
-    return this;
   }
 
   // Build a context that only contains the services a handler declared
@@ -450,31 +314,4 @@ export interface MessageCreateHandler extends EventHandler {
     [message]: [message: Message],
     { client, handler }: { client: Client<true>; handler: DiscordHandler },
   ) => Promise<void> | void;
-}
-
-function mergeDeep<T, U>(
-  target: T,
-  source: U,
-  override = false,
-): Reconcile<T, U> {
-  const result: any = { ...target };
-
-  for (const key in source) {
-    const srcVal = (source as any)[key];
-    const tgtVal = (target as any)[key];
-
-    if (
-      !override &&
-      typeof srcVal === "object" &&
-      typeof tgtVal === "object" &&
-      srcVal !== null &&
-      tgtVal !== null
-    ) {
-      result[key] = mergeDeep(tgtVal, srcVal, override);
-    } else {
-      result[key] = srcVal;
-    }
-  }
-
-  return result;
 }
