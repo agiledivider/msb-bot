@@ -24,6 +24,7 @@ The following commits have landed on `main` and address parts of this backlog:
 - `3d11e22` refactor(presence): migrate presenceEvent to defineEventHandler (second handler under #3)
 - `85a8934` refactor(ready): migrate readyHandler to defineEventHandler (third handler under #3; established `{ logger, ... }` destructure convention)
 - `114c78d` style: destructure ctx in earlier-migrated handlers (consistency with the new convention)
+- `bf0f434` refactor(welcome): migrate welcomeMessage to defineEventHandler (fourth handler under #3)
 
 What's now in place:
 - An augmentable `Services` and `Config` type registry (`src/Services/registry.ts`).
@@ -68,7 +69,7 @@ These items existed in the original review but no longer fit the codebase. The f
 - Field is now `private services: Record<string, unknown> = {}`; constructor's `this.services = []` line removed. Semantics unchanged.
 
 ### [ ] 3. Migrate legacy handlers to the typed-ctx pattern (was: untyped execute-context contract)
-- **Status:** in progress. Migrated: `SpaceStateInfo.ts` (`d4a3ed7`), `presenceEvent.ts` (`3d11e22`), `readyHandler.ts` (`85a8934`). Remaining handlers still on the untyped pattern: `memberCode/generateCodesCommand.ts`, `memberCode/listUnusedCodesCommand.ts`, `memberCode/membercodeCommand.ts`, `trashInfos/regularTrashInfos.ts`, `trashInfos/nextTrashDatesCommand.ts`, `trashInfos/reactOnButtonClickInteractionCreateHandler.ts`, `welcomeUsers/welcomeMessage.ts`, `welcomeMember/welcomeInfos.ts`, `spaceState/changeSpaceState.ts`. Plus the untracked `askForInfos.ts`.
+- **Status:** in progress. Migrated: `SpaceStateInfo.ts` (`d4a3ed7`), `presenceEvent.ts` (`3d11e22`), `readyHandler.ts` (`85a8934`), `welcomeUsers/welcomeMessage.ts` (`bf0f434`). Remaining handlers still on the untyped pattern: `memberCode/generateCodesCommand.ts`, `memberCode/listUnusedCodesCommand.ts`, `memberCode/membercodeCommand.ts`, `trashInfos/regularTrashInfos.ts`, `trashInfos/nextTrashDatesCommand.ts`, `trashInfos/reactOnButtonClickInteractionCreateHandler.ts`, `welcomeMember/welcomeInfos.ts`, `spaceState/changeSpaceState.ts`. Plus the untracked `askForInfos.ts`.
 - **Per-handler steps:** convert to `defineEventHandler` (or `defineCommandHandler` once we add it) with explicit `needs`, destructure the ctx in the `execute` signature (e.g. `execute(args, { logger, config })`) — established convention — declare any config slice this handler reads via `registerConfigSlice` + `z.infer`, drop the untyped class body. Tighten any internal classes/services it constructs to take only what they actually need (see `d4a3ed7`'s `SpaceStateInfoProcessor` example).
 - **Sequencing:** safe to do one handler per PR. The framework supports both old and new shapes simultaneously, so there is no flag-day.
 - **Note:** the framework currently only supports `defineEventHandler`. Commands still use the legacy class shape. A `defineCommandHandler` helper needs to be added before the command handlers (`memberCode/*`, `nextTrashDatesCommand`, etc.) can be migrated.
