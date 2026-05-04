@@ -1,16 +1,11 @@
-import { Client, Events } from "discord.js";
-import {ClientReadyHandler, DiscordHandler} from "../DiscordHandler/DiscordHandler";
+import { Events } from "discord.js";
+import { defineEventHandler } from "../DiscordHandler/define";
 
- class ReadyHandler implements ClientReadyHandler {
-    eventType: Events.ClientReady = Events.ClientReady;
-
-    execute([], {logger}) {
-        logger.debug("ready called")
-    }
-    getName(): string {
-        return "some test ready handler"
-    }
-
-}
-
-export default ReadyHandler
+export default defineEventHandler({
+  name: "ready",
+  eventType: Events.ClientReady,
+  needs: ["logger"],
+  execute([], { logger }) {
+    logger.debug("ready called");
+  },
+});
