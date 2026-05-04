@@ -19,6 +19,7 @@ import {
 } from "./types";
 import { BaseLogger } from "pino";
 import spaceStateInfo from "../handlers/spaceState/SpaceStateInfo";
+import { validateConfig } from "../Services/registry";
 
 export interface DiscordHandlerOptions {
   client: Client;
@@ -344,6 +345,12 @@ export class DiscordHandler<Decorators = {}> {
       throw new Error(
         `DiscordHandler.start(): ${errors.length} unmet service requirement(s):\n  - ${errors.join("\n  - ")}`,
       );
+    }
+    // Validate runtime config against every slice registered by
+    // services/handlers via `registerConfigSlice`. No-op if nothing
+    // registered, so legacy code paths are unaffected.
+    if (this.config) {
+      validateConfig(this.config);
     }
     this.logger?.info(
       `Verified ${all_actions.length} handlers; all required services present.`,

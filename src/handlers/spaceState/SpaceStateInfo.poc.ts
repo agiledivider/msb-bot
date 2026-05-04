@@ -14,16 +14,23 @@
 // their slices the same way in their own files; TypeScript merges them all.
 
 import { Events, TextChannel } from "discord.js";
+import { z } from "zod";
 import { defineEventHandler } from "../../DiscordHandler/define";
+import { registerConfigSlice } from "../../Services/registry";
+
+// Single source of truth: the Zod schema produces both the runtime
+// validator (via `registerConfigSlice` → collected and run by
+// DiscordHandler.start()) and the compile-time type (via `z.infer`).
+const configSlice = registerConfigSlice({
+  spaceStateInfo: z.object({
+    channelId: z.string(),
+    guildId: z.string(),
+    mqttTopic: z.string(),
+  }),
+});
 
 declare module "../../Services/registry" {
-  interface Config {
-    spaceStateInfo: {
-      channelId: string;
-      guildId: string;
-      mqttTopic: string;
-    };
-  }
+  interface Config extends z.infer<typeof configSlice> {}
 }
 
 export default defineEventHandler({

@@ -1,6 +1,11 @@
 import { describe, expect, test, beforeEach } from "bun:test";
 import { Client, Events } from "discord.js";
+import { z } from "zod";
 import { DiscordHandler } from "../../src/DiscordHandler/DiscordHandler";
+import {
+  registerConfigSlice,
+  _resetCollectedConfigSlicesForTesting,
+} from "../../src/Services/registry";
 import pino from "pino";
 import TypedTestHandler from "../testData/typedHandler/typed";
 
@@ -8,11 +13,12 @@ const logger = pino({ level: "silent" });
 
 const fixturePath = __dirname + "/../testData/typedHandler";
 
-function newHandler() {
+function newHandler(config?: object) {
   return new DiscordHandler({
     handlerPath: fixturePath,
     client: new Client({ intents: [] }),
     logger,
+    config,
   });
 }
 
@@ -56,5 +62,41 @@ describe("DiscordHandler - typed handler wiring", () => {
     // logger and discordHandler not declared, so absent
     expect("logger" in ctx).toBe(false);
     expect("discordHandler" in ctx).toBe(false);
+  });
+});
+
+describe("DiscordHandler.start() — config validation", () => {
+  beforeEach(() => {
+    TypedTestHandler.lastCtx = null;
+    _resetCollectedConfigSlicesForTesting();
+  });
+
+  test("throws when config is missing a required slice field", () => {
+    registerConfigSlice({
+      myFeature: z.object({ apiKey: z.string() }),
+    });
+    const h = newHandler({ myFeature: {} });
+    h.addService("myService", {});
+    expect(() => h.start()).toThrow(/myFeature\.apiKey/);
+  });
+
+  test("succeeds when config matches the registered slices", () => {
+    registerConfigSlice({
+      myFeature: z.object({ apiKey: z.string() }),
+    });
+    const h = newHandler({ myFeature: { apiKey: "secret" } });
+    h.addService("myService", {});
+    expect(() => h.start()).not.toThrow();
+  });
+
+  test("config validation runs after the service-availability check", () => {
+    // service gap should still surface even if config is malformed —
+    // service errors are reported first.
+    registerConfigSlice({
+      foo: z.object({ x: z.string() }),
+    });
+    const h = newHandler({ foo: {} });
+    // myService is not registered
+    expect(() => h.start()).toThrow(/myService/);
   });
 });
